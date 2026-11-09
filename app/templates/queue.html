@@ -13,6 +13,7 @@
 </div>
 
 {% if rows %}
+<div class="table-wrap">
 <table class="grid queue" data-testid="queue">
   <thead>
     <tr>
@@ -28,7 +29,7 @@
   {% for r in rows %}
     <tr class="{{ 'late' if r.remaining < 0 else ('urgent' if r.remaining <= 30 else '') }}" data-testid="row-{{ r.order_id }}">
       <td>
-        <span class="countdown">{% if r.remaining < 0 %}Deadline passed {{ (-r.remaining) | mins }} ago{% else %}{{ r.remaining | mins }}{% endif %}</span>
+        <span class="countdown">{% if r.remaining < 0 %}Passed {{ (-r.remaining) | mins }} ago{% elif r.remaining == 0 %}Due now{% else %}{{ r.remaining | mins }} left{% endif %}</span>
         <span class="sub">act by {{ r.intervention_deadline | local }}</span>
       </td>
       <td>
@@ -43,7 +44,7 @@
       <td>
         {% if r.status == 'OPEN' %}
           <span class="status open">Waiting for owner</span>
-          <span class="sub {{ 'bad-text' if r.ack_left < 0 }}">{% if r.ack_left < 0 %}response overdue{% else %}respond within {{ r.ack_left }} min{% endif %}</span>
+          <span class="sub {{ 'bad-text' if r.ack_left <= 0 }}">{% if r.ack_left < 0 %}response overdue{% elif r.ack_left == 0 %}respond now{% else %}respond within {{ r.ack_left }} min{% endif %}</span>
         {% else %}
           <span class="status ack">In progress</span>
           <span class="sub">since {{ r.acknowledged_at | local }}</span>
@@ -54,6 +55,7 @@
   {% endfor %}
   </tbody>
 </table>
+</div>
 {% else %}
 <div class="empty" data-testid="queue-empty">
   {% if stale_task %}
@@ -68,6 +70,7 @@
 
 {% if recent %}
 <h2 class="section">Recently closed</h2>
+<div class="table-wrap">
 <table class="grid compact" data-testid="recent">
   <thead><tr><th>Order</th><th>Issue</th><th>Outcome</th><th>By</th><th class="num">Closed</th></tr></thead>
   <tbody>
@@ -82,5 +85,6 @@
   {% endfor %}
   </tbody>
 </table>
+</div>
 {% endif %}
 {% endblock %}

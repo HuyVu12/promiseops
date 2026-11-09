@@ -16,7 +16,7 @@
       <span class="state-value">Passed {{ (-remaining) | mins }} ago</span>
     {% else %}
       <span class="state-label">Act before {{ x.intervention_deadline | local }}</span>
-      <span class="state-value">{{ remaining | mins }} left</span>
+      <span class="state-value">{% if remaining == 0 %}Due now{% else %}{{ remaining | mins }} left{% endif %}</span>
     {% endif %}
   </div>
 </div>
@@ -88,7 +88,7 @@
         <dt>DC</dt><dd>{{ order.dc }}</dd>
         <dt>Owner</dt><dd data-testid="owner">{{ x.owner }} <span class="muted">({{ ROLES[x.owner_role] }})</span>{% if x.escalated %} <span class="tag esc">Escalated</span>{% endif %}</dd>
         {% if x.status == 'OPEN' %}
-        <dt>Response due</dt><dd class="{{ 'bad-text' if ack_left < 0 }}">{{ x.ack_due_at | local }}{% if ack_left < 0 %} (overdue){% else %} ({{ ack_left }} min){% endif %}</dd>
+        <dt>Response due</dt><dd class="{{ 'bad-text' if ack_left <= 0 }}">{{ x.ack_due_at | local }}{% if ack_left < 0 %} (overdue){% elif ack_left == 0 %} (now){% else %} ({{ ack_left }} min){% endif %}</dd>
         {% endif %}
       </dl>
       {% for o in others %}

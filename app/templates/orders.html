@@ -4,9 +4,10 @@
 <div class="page-head">
   <div>
     <h1>Orders in scope</h1>
-    <p class="lede">Home deliveries with a timed promise from {{ rows | length }} orders across 12 stores. Read-only view of source data.</p>
+    <p class="lede">{{ rows | length }} home deliveries with a timed promise, across 12 stores. Read-only view of source data.</p>
   </div>
 </div>
+<div class="table-wrap">
 <table class="grid" data-testid="orders">
   <thead>
     <tr>
@@ -41,4 +42,5 @@
   {% endfor %}
   </tbody>
 </table>
+</div>
 {% endblock %}

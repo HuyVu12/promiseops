@@ -23,6 +23,9 @@
 }
 
 * { box-sizing: border-box; }
+::selection { background: #c9d5f5; color: var(--ink); }
+html { scrollbar-color: #c3c9d4 transparent; accent-color: var(--accent); }
+a { text-underline-offset: 2px; }
 body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; }
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
@@ -102,6 +105,9 @@ h2 { font-size: 15px; margin: 0 0 12px; font-weight: 650; }
 .tabs a:hover { text-decoration: none; color: var(--ink); }
 
 /* Tables */
+.table-wrap { overflow-x: auto; border-radius: var(--radius); box-shadow: var(--shadow); }
+.table-wrap .grid { box-shadow: none; }
+.table-wrap + .table-wrap { margin-top: 18px; }
 .grid { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
 .grid th { text-align: left; font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; padding: 10px 14px; background: #fafbfc; border-bottom: 1px solid var(--line); }
 .grid td { padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -113,13 +119,17 @@ h2 { font-size: 15px; margin: 0 0 12px; font-weight: 650; }
 .sub { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
 .sub-inline { color: var(--warn); font-size: 12px; margin-left: 4px; }
 
-.queue td:first-child { border-left: 4px solid transparent; width: 170px; }
-.queue tr.urgent td:first-child { border-left-color: #e0a100; }
-.queue tr.late td:first-child { border-left-color: var(--danger); }
+.queue td:first-child { width: 168px; }
+.countdown {
+  display: inline-block; font-size: 15px; font-weight: 650; font-variant-numeric: tabular-nums;
+  padding: 3px 9px; border-radius: 6px; background: var(--accent-soft); color: var(--accent);
+}
+.queue tr.urgent .countdown { background: var(--warn-soft); color: var(--warn); }
+.queue tr.late .countdown { background: var(--danger-soft); color: var(--danger); }
 .queue tr.late { background: #fffafa; }
-.countdown { font-size: 18px; font-weight: 650; font-variant-numeric: tabular-nums; }
-.queue tr.urgent .countdown { color: var(--warn); }
-.queue tr.late .countdown { color: var(--danger); font-size: 14px; }
+.queue tbody tr { transition: background-color 120ms ease-out; }
+.queue tbody tr:hover { background: #f8f9fb; }
+.queue tbody tr.late:hover { background: #fff4f3; }
 .order-link { font-weight: 650; font-size: 15px; }
 .queue td:nth-child(3) { max-width: 360px; }
 
@@ -146,7 +156,7 @@ a.tag:hover { text-decoration: none; filter: brightness(0.96); }
 .empty p { margin: 0; color: var(--muted); }
 
 /* Detail layout */
-.layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) clamp(300px, 30vw, 360px); gap: 18px; align-items: start; }
 .layout.even { grid-template-columns: 1fr 1fr; }
 .col-main, .col-side { display: flex; flex-direction: column; gap: 18px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
@@ -190,7 +200,7 @@ a.tag:hover { text-decoration: none; filter: brightness(0.96); }
 .log-note { color: var(--ink); }
 
 /* Forms */
-.actions form + form { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.actions .hint + form, .actions form + form { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
 .stack { display: flex; flex-direction: column; gap: 8px; }
 .stack label { font-weight: 600; font-size: 13px; }
 fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -207,9 +217,12 @@ button {
   font: inherit; font-weight: 600; padding: 8px 14px; border-radius: 6px; cursor: pointer;
   border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
 }
-button:hover { background: #f6f7f9; }
+button { transition: background-color 120ms ease-out, border-color 120ms ease-out, transform 80ms ease-out; }
+button:hover { background: #f6f7f9; border-color: #b9c0cc; }
+button:active { transform: translateY(1px); }
+button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-button.primary:hover { background: #1d3c9c; }
+button.primary:hover { background: #1d3c9c; border-color: #1d3c9c; }
 button.block { width: 100%; padding: 10px; }
 button.warn { background: var(--warn-soft); border-color: #f3d19c; color: var(--warn); }
 button.ghost { background: transparent; border-color: transparent; color: var(--muted); }
@@ -232,8 +245,29 @@ button.ghost { background: transparent; border-color: transparent; color: var(--
 .demo .inline { display: flex; gap: 6px; }
 .demo button { padding: 6px 11px; font-size: 13px; }
 
-@media (max-width: 1000px) {
-  .layout, .layout.even { grid-template-columns: 1fr; }
+@media (max-width: 1100px) {
+  .layout.even { grid-template-columns: 1fr; }
   .stats { grid-template-columns: repeat(2, 1fr); }
-  .topbar { flex-wrap: wrap; }
+  .topbar { flex-wrap: wrap; row-gap: 8px; padding: 10px 20px; }
+  .top-right { margin-left: 0; }
+  .sources-note { margin-left: 0; width: 100%; }
+  .page { padding: 18px 20px 32px; }
+  .sources, .demo { padding-left: 20px; padding-right: 20px; }
+  .grid { min-width: 760px; }
+  .card .grid { min-width: 0; }
+}
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+  .col-side { order: -1; }
+}
+@media (max-width: 640px) {
+  .demo { position: static; }
+  .clock-day { display: none; }
+  .page-head { flex-direction: column; align-items: stretch; }
+  .stats, .stats.three { grid-template-columns: 1fr; }
+  .milestones { grid-template-columns: repeat(2, 1fr); row-gap: 18px; }
+  .log li { grid-template-columns: 44px 1fr; }
+  .log-action, .log-note { grid-column: 2; }
+  .demo-note { display: none; }
+  .nav { order: 3; width: 100%; overflow-x: auto; }
 }
