@@ -358,3 +358,9 @@ body.error-page { display: block; }
 .exc-link.open { color: var(--amber); }
 .exc-link .sub { display: block; margin: 0; font-weight: 400; }
 .exc-link + .exc-link { margin-top: 6px; }
+
+/* Compact lanes: alternate hover labels below and above the course so neighbouring controls never collide. */
+.lane:not(.big) .ctl-label.up { top: auto; bottom: calc(50% + 11px); }
+.quiet .lane .ctl-label { top: calc(50% + 8px); }
+.quiet .lane .ctl-label.up { top: auto; bottom: calc(50% + 8px); }
+.trow:hover .ctl-label { background: rgba(255, 255, 255, 0.92); padding: 0 3px; border-radius: 3px; z-index: 4; }

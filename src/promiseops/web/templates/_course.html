@@ -21,7 +21,7 @@
     </span>
     {% else %}
     {% set first_missed = (c.stops | selectattr('state', 'equalto', 'missed') | first) %}
-    <span class="ctl-label {{ 'missed show' if s.state == 'missed' and show_missed and s is sameas first_missed }}" style="left:{{ s.pct }}%">{{ _(s.label) }} {{ s.time }}</span>
+    <span class="ctl-label {{ 'missed show' if s.state == 'missed' and show_missed and s is sameas first_missed }} {{ 'up' if loop.index0 is odd }}" style="left:{{ s.pct }}%">{{ _(s.label) }} {{ s.time }}</span>
     {% endif %}
   {% endfor %}
   {% for s in c.stops if s.actual_pct is not none and (s.label == 'Promise' or s.state == 'late') and (s.actual_pct - s.pct) | abs > 0.4 %}
