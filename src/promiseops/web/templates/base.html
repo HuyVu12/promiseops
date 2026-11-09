@@ -70,8 +70,9 @@
 
   <footer class="demo" aria-label="{{ _('Demo controls') }}">
     <span class="demo-tag">{{ _('Demo controls') }}</span>
-    <span class="demo-note">{{ _('Simulation only: replaces real OMS/WMS feeds and wall-clock time. Each recorded action takes {n} simulated minute.', n=action_minutes) }}</span>
-    <form method="post" action="/sim/advance" class="inline">
+    <span class="demo-note" title="{{ _('Simulation only: replaces real OMS/WMS feeds and wall-clock time. Each recorded action takes {n} simulated minute.', n=action_minutes) }}">{{ _('Simulation only: replaces real OMS/WMS feeds and wall-clock time. Each recorded action takes {n} simulated minute.', n=action_minutes) }}</span>
+    <form method="post" action="/sim/advance" class="inline demo-group" role="group" aria-label="{{ _('Move the clock') }}">
+      <span class="demo-k">{{ _('Clock') }}</span>
       <input type="hidden" name="next" value="{{ request.url.path }}">
       <button name="minutes" value="5" data-testid="adv-5">+5 min</button>
       <button name="minutes" value="15" data-testid="adv-15">+15 min</button>
@@ -79,17 +80,18 @@
       <button name="minutes" value="60" data-testid="adv-60">+1 h</button>
       <button name="minutes" value="300" data-testid="adv-300">+5 h</button>
     </form>
-    <form method="post" action="/sim/feed" class="inline">
+    <form method="post" action="/sim/feed" class="inline demo-group" role="group" aria-label="{{ _('Incident') }}">
+      <span class="demo-k">{{ _('Incident') }}</span>
       <input type="hidden" name="next" value="{{ request.url.path }}">
       {% set wms = freshness | selectattr('id', 'equalto', 'wms') | first %}
       {% if wms and wms.paused %}
       <button name="action" value="resume" class="warn" data-testid="feed-resume">{{ _('Resume fulfilment feed') }}</button>
       {% else %}
-      <button name="action" value="pause" data-testid="feed-pause">{{ _('Simulate feed outage') }}</button>
+      <button name="action" value="pause" class="incident" data-testid="feed-pause">{{ _('Simulate feed outage') }}</button>
       {% endif %}
     </form>
-    <form method="post" action="/sim/reset" class="inline" onsubmit="return confirm('{{ _('Reset the scenario to 09:00?') }}')">
-      <button class="ghost" data-testid="reset">{{ _('Reset scenario') }}</button>
+    <form method="post" action="/sim/reset" class="inline demo-group" onsubmit="return confirm('{{ _('Reset the scenario to 09:00?') }}')">
+      <button class="ghost danger" data-testid="reset">{{ _('Reset scenario') }}</button>
     </form>
   </footer>
 </div>

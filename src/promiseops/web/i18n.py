@@ -440,6 +440,12 @@ VI: dict[str, str] = {
     "No fulfilment data for {n} min (limit {m}). Missing-event alerts are paused to avoid false alarms.":
         "Không có dữ liệu kho trong {n} phút (giới hạn {m}). Cảnh báo thiếu sự kiện tạm dừng để tránh báo sai.",
     "Data task owner": "Người phụ trách việc dữ liệu",
+    "Legend": "Chú giải",
+    "Move the clock": "Tua đồng hồ",
+    "Clock": "Đồng hồ",
+    "Incident": "Sự cố",
+    "None": "Không có",
+    "Open in the live demo": "Mở trong bản demo trực tiếp",
 }
 
 # Sentence patterns produced by the system (engine, workflow, simulation).

@@ -9,18 +9,19 @@
   </div>
 </div>
 
-<div class="board" data-testid="orders">
-  <div class="trow thead">
-    <div class="cell">{{ _('Delivery') }}</div>
-    <div class="cell">{{ _('Order') }}</div>
-    <div class="lane-cell">{{ axis_lane(axis, now_pct, now) }}</div>
-    <div class="cell">{{ _('Exceptions') }}</div>
+{{ legend(compact=True) }}
+<div class="board" data-testid="orders" role="table" aria-label="{{ _('Orders in scope') }}">
+  <div class="trow thead" role="row">
+    <div class="cell" role="columnheader">{{ _('Delivery') }}</div>
+    <div class="cell" role="columnheader">{{ _('Order') }}</div>
+    <div class="lane-cell" role="columnheader" aria-label="{{ _('Course') }}">{{ axis_lane(axis, now_pct, now) }}</div>
+    <div class="cell" role="columnheader">{{ _('Exceptions') }}</div>
   </div>
-  <div class="tbody">
+  <div class="tbody" role="rowgroup">
   {% for r in rows %}
     {% set c = courses[r.id] %}
-    <div class="trow" data-testid="order-{{ r.id }}">
-      <div class="cell">
+    <div class="trow" role="row" id="order-{{ r.id }}" data-testid="order-{{ r.id }}">
+      <div class="cell" role="cell">
         {% if c.outcome %}
           <span class="outcome {{ 'ontime' if c.outcome == 'on time' else 'late' }}">{{ c.delivered }} {{ _(c.outcome) }}</span>
         {% elif results[r.id] == 'overdue' %}
@@ -32,16 +33,17 @@
         {% endif %}
         <span class="sub">{{ _('Promise') }} {{ r.promised_at | local }}</span>
       </div>
-      <div class="cell"><span><span class="order-link">{{ r.id }}</span> <span class="tag {{ r.customer_type | lower }}">{{ r.customer_type }}</span></span><span class="sub">{{ r.store }}</span></div>
-      <div class="lane-cell">{{ course_lane(c, axis, now_pct, show_missed=False, show_outcome=False) }}</div>
-      <div class="cell">
+      <div class="cell" role="cell"><span><span class="order-id">{{ r.id }}</span> <span class="tag {{ r.customer_type | lower }}">{{ r.customer_type }}</span></span><span class="sub">{{ r.store }}</span></div>
+      <div class="lane-cell" role="cell">{{ course_lane(c, axis, now_pct, show_missed=False, show_outcome=False) }}</div>
+      <div class="cell" role="cell">
         {% for e in r.excs %}
           <a href="/exceptions/{{ e.id }}" class="exc-link {{ 'open' if e.status != 'RESOLVED' }}">{{ _(EXCEPTION_TYPES[e.type]) }}<span class="sub">{% if e.status == 'RESOLVED' %}{{ _(RESOLUTION_SHORT[e.resolution]) }}{% else %}{{ _('Open') }}{% endif %}</span></a>
+        {% else %}
+          <span class="sub">{{ _('None') }}</span>
         {% endfor %}
       </div>
     </div>
   {% endfor %}
   </div>
 </div>
-{{ legend() }}
 {% endblock %}

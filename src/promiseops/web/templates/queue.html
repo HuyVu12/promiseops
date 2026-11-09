@@ -7,36 +7,37 @@
     <h1>{{ _('Exception queue') }}</h1>
     <p class="lede">{{ _('Every order is a course of four controls on one timetable. The red line is now; a control it has passed without confirmation needs action.') }}</p>
   </div>
-  <div class="tabs" role="tablist">
-    <a href="/app?view=all" class="{{ 'on' if view == 'all' }}" data-testid="view-all">{{ _('All open') }} <span>{{ open_count }}</span></a>
-    <a href="/app?view=mine" class="{{ 'on' if view == 'mine' }}" data-testid="view-mine">{{ _('Assigned to me') }} <span>{{ mine }}</span></a>
+  <div class="tabs" role="tablist" aria-label="{{ _('Exception queue') }}">
+    <a href="/app?view=all" role="tab" aria-selected="{{ 'true' if view == 'all' else 'false' }}" class="{{ 'on' if view == 'all' }}" data-testid="view-all">{{ _('All open') }} <span>{{ open_count }}</span></a>
+    <a href="/app?view=mine" role="tab" aria-selected="{{ 'true' if view == 'mine' else 'false' }}" class="{{ 'on' if view == 'mine' }}" data-testid="view-mine">{{ _('Assigned to me') }} <span>{{ mine }}</span></a>
   </div>
 </div>
 
-<div class="board" data-testid="queue">
-  <div class="trow thead">
-    <div class="cell">{{ _('Time left') }}</div>
-    <div class="cell">{{ _('Order') }}</div>
-    <div class="lane-cell">{{ axis_lane(axis, now_pct, now) }}</div>
-    <div class="cell">{{ _('Owner and status') }}</div>
+{{ legend(compact=True) }}
+<div class="board" data-testid="queue" role="table" aria-label="{{ _('Exception queue') }}">
+  <div class="trow thead" role="row">
+    <div class="cell" role="columnheader">{{ _('Time left') }}</div>
+    <div class="cell" role="columnheader">{{ _('Order') }}</div>
+    <div class="lane-cell" role="columnheader" aria-label="{{ _('Course') }}">{{ axis_lane(axis, now_pct, now) }}</div>
+    <div class="cell" role="columnheader">{{ _('Owner and status') }}</div>
   </div>
 
-  <div class="band-head">{{ _('Open exceptions') }} <span>{{ rows | length }} · {{ _('least time left first') }}</span></div>
-  <div class="tbody">
+  <div class="tbody" role="rowgroup" aria-label="{{ _('Open exceptions') }}">
+  <div class="band-head" role="row"><div class="band-cell" role="cell">{{ _('Open exceptions') }} <span>{{ rows | length }} · {{ _('least time left first') }}</span></div></div>
   {% for r in rows %}
     {% set c = courses[r.order_id] %}
     {% set urg = 'late' if r.remaining < 0 else ('urgent' if r.remaining <= 30 else '') %}
-    <div class="trow {{ urg }}" data-testid="row-{{ r.order_id }}">
-      <div class="cell">
+    <div class="trow has-link {{ urg }}" role="row" data-testid="row-{{ r.order_id }}">
+      <div class="cell" role="cell">
         <span class="left-time {{ urg }}">{% if r.remaining < 0 %}{{ _('Passed {t} ago', t=(-r.remaining) | mins) }}{% elif r.remaining == 0 %}{{ _('Due now') }}{% else %}{{ _('{t} left', t=r.remaining | mins) }}{% endif %}</span>
         <span class="sub">{{ _('act by {t}', t=r.intervention_deadline | local) }}</span>
       </div>
-      <div class="cell">
-        <span><a href="/exceptions/{{ r.id }}" class="order-link">{{ r.order_id }}</a> <span class="tag {{ r.customer_type | lower }}">{{ r.customer_type }}</span></span>
+      <div class="cell" role="cell">
+        <span><a href="/exceptions/{{ r.id }}" class="order-link stretched">{{ r.order_id }}</a> <span class="tag {{ r.customer_type | lower }}">{{ r.customer_type }}</span></span>
         <span class="sub">{{ r.store }} · {{ _(EXCEPTION_TYPES[r.type]) }}</span>
       </div>
-      <div class="lane-cell">{{ course_lane(c, axis, now_pct) }}</div>
-      <div class="cell">
+      <div class="lane-cell" role="cell">{{ course_lane(c, axis, now_pct) }}</div>
+      <div class="cell" role="cell">
         <span>{{ r.owner }}{% if r.escalated %} <span class="tag esc">{{ _('Escalated') }}</span>{% endif %}</span>
         {% if r.status == 'OPEN' %}
           <span class="sub"><span class="status open">{{ _('Waiting for owner') }}</span> · <span class="{{ 'bad-text' if r.ack_left <= 0 }}">{% if r.ack_left < 0 %}{{ _('response overdue') }}{% elif r.ack_left == 0 %}{{ _('respond now') }}{% else %}{{ _('respond within {n} min', n=r.ack_left) }}{% endif %}</span></span>
@@ -46,7 +47,7 @@
       </div>
     </div>
   {% else %}
-    <div class="empty" data-testid="queue-empty">
+    <div class="empty" role="row" data-testid="queue-empty"><div role="cell">
       {% if stale_task %}
       <h2>{{ _('No new alerts while fulfilment data is stale') }}</h2>
       <p>{{ _('Silence from a stale feed proves nothing. Follow the standard floor process until data recovers.') }}</p>
@@ -54,29 +55,28 @@
       <h2>{{ _('No open exceptions') }}{% if view == 'mine' %} ({{ _('assigned to you') }}){% endif %}</h2>
       <p>{{ _('Every order with a passed milestone has a confirmed event or a recorded outcome.') }}</p>
       {% endif %}
-    </div>
+    </div></div>
   {% endfor %}
   </div>
 
   {% if view == 'all' %}
-  <div class="band-head">{{ _('On course') }} <span>{{ on_course | length }} · {{ _('orders without an open exception') }}</span></div>
-  <div class="tbody quiet">
+  <div class="tbody quiet" role="rowgroup" aria-label="{{ _('On course') }}">
+  <div class="band-head" role="row"><div class="band-cell" role="cell">{{ _('On course') }} <span>{{ on_course | length }} · {{ _('orders without an open exception') }}</span></div></div>
   {% for o in on_course %}
     {% set c = courses[o.id] %}
-    <div class="trow" data-testid="course-{{ o.id }}">
-      <div class="cell">
+    <div class="trow" role="row" data-testid="course-{{ o.id }}">
+      <div class="cell" role="cell">
         {% if c.delivered %}<span class="left-time calm">{{ _('Delivered') }}</span>
-        {% elif c.next %}<span class="left-time calm">{{ _('next: {label} {t}', label=_(c.next.label), t=c.next.time) }}</span>{% endif %}
+        {% elif c.next %}<span class="next"><span class="next-k">{{ _('next') }}</span><span class="next-v">{{ _(c.next.label) }} {{ c.next.time }}</span></span>{% endif %}
       </div>
-      <div class="cell"><span><span class="order-link">{{ o.id }}</span> <span class="tag {{ o.customer_type | lower }}">{{ o.customer_type }}</span></span><span class="sub">{{ o.store }}</span></div>
-      <div class="lane-cell">{{ course_lane(c, axis, now_pct, show_missed=False) }}</div>
-      <div class="cell"></div>
+      <div class="cell" role="cell"><span><a href="/orders#order-{{ o.id }}" class="order-link">{{ o.id }}</a> <span class="tag {{ o.customer_type | lower }}">{{ o.customer_type }}</span></span><span class="sub">{{ o.store }}</span></div>
+      <div class="lane-cell" role="cell">{{ course_lane(c, axis, now_pct, show_missed=False) }}</div>
+      <div class="cell" role="cell"><span class="sub">{{ _('Promise') }} {{ o.promised_at | local }}{% if c.delivered %} · {{ c.delivered }} {{ _(c.outcome) }}{% endif %}</span></div>
     </div>
   {% endfor %}
   </div>
   {% endif %}
 </div>
-{{ legend() }}
 
 {% if recent %}
 <h2 class="section">{{ _('Recently closed') }}</h2>
