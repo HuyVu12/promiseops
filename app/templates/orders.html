@@ -29,7 +29,7 @@
         <span class="sub">{{ _('Promise') }} {{ r.promised_at | local }}</span>
       </div>
       <div class="cell"><span><span class="order-link">{{ r.id }}</span> <span class="tag {{ r.customer_type | lower }}">{{ r.customer_type }}</span></span><span class="sub">{{ r.store }}</span></div>
-      <div class="lane-cell">{{ course_lane(c, axis, now_pct, show_missed=False) }}</div>
+      <div class="lane-cell">{{ course_lane(c, axis, now_pct, show_missed=False, show_outcome=False) }}</div>
       <div class="cell">
         {% for e in r.excs %}
           <a href="/exceptions/{{ e.id }}" class="tag {{ 'esc' if e.status != 'RESOLVED' else 'done' }}">{{ _(EXCEPTION_TYPES[e.type]) }}</a>

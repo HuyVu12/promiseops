@@ -7,7 +7,7 @@
 </div>
 {%- endmacro %}
 
-{% macro course_lane(c, axis, now_pct, big=False, show_missed=True) -%}
+{% macro course_lane(c, axis, now_pct, big=False, show_missed=True, show_outcome=True) -%}
 <div class="lane {{ 'big' if big }}" style="--q:{{ axis.quarters }}">
   {% for h in axis.hours %}<span class="hourline" style="left:{{ h.pct }}%"></span>{% endfor %}
   <span class="leg {{ 'done' if c.outcome }}" style="left:{{ c.start_pct }}%;width:{{ c.end_pct - c.start_pct }}%"></span>
@@ -24,8 +24,12 @@
     <span class="ctl-label {{ 'missed show' if s.state == 'missed' and show_missed and s is sameas first_missed }}" style="left:{{ s.pct }}%">{{ _(s.label) }} {{ s.time }}</span>
     {% endif %}
   {% endfor %}
-  {% if c.outcome %}
-    <span class="outcome-flag {{ 'ontime' if c.outcome == 'on time' else 'late' }}" style="left:{{ c.end_pct }}%">{{ c.delivered }} {{ _(c.outcome) }}</span>
+  {% for s in c.stops if s.actual_pct is not none and (s.label == 'Promise' or s.state == 'late') and (s.actual_pct - s.pct) | abs > 0.4 %}
+    <span class="punch" style="left:{{ s.actual_pct }}%" title="{{ _(s.label) }}: {{ _('confirmed {t}', t=s.actual) }}"></span>
+  {% endfor %}
+  {% if c.outcome and show_outcome %}
+    {% set d = c.stops[-1] %}
+    <span class="outcome-flag {{ 'ontime' if c.outcome == 'on time' else 'late' }}" style="left:{{ [d.pct, d.actual_pct] | max }}%">{{ c.delivered }} {{ _(c.outcome) }}</span>
   {% endif %}
   <span class="now" style="left:{{ now_pct }}%"></span>
 </div>

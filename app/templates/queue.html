@@ -70,7 +70,7 @@
       </div>
       <div class="cell"><span><span class="order-link">{{ o.id }}</span> <span class="tag {{ o.customer_type | lower }}">{{ o.customer_type }}</span></span><span class="sub">{{ o.store }}</span></div>
       <div class="lane-cell">{{ course_lane(c, axis, now_pct, show_missed=False) }}</div>
-      <div class="cell"><span class="sub">{% if c.outcome %}<span class="outcome {{ 'ontime' if c.outcome == 'on time' else 'late' }}">{{ _(c.outcome) }}</span>{% endif %}</span></div>
+      <div class="cell"></div>
     </div>
   {% endfor %}
   </div>

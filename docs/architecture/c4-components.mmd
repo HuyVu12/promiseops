@@ -1,0 +1,29 @@
+C4Component
+  title Containers and components - inside PromiseOps
+
+  Person(user, "Coordinator / shift lead", "Web browser")
+  System_Ext(feeds, "OMS / WMS feeds", "Real API or demo harness")
+
+  Container_Boundary(app, "Web application - Python 3, FastAPI, Uvicorn") {
+    Component(web, "Pages and JSON API", "FastAPI, Jinja2", "Queue, detail, orders, outcomes, data health; /api/*")
+    Component(ingest, "Source adapter", "ingest.py", "Validates, idempotent on source+event id, tracks freshness")
+    Component(engine, "Rules engine", "engine.py", "2 exception rules, freshness guard, 15-min escalation")
+    Component(workflow, "Workflow", "workflow.py", "Take ownership, escalate, resolve with evidence, role checks")
+    Component(kpi, "Outcomes", "kpi.py", "On-time vs original promise, B2B/B2C, false alarms")
+    Component(tt, "Timetable", "timetable.py", "Course geometry: 4 controls on one time axis")
+    Component(sim, "Demo harness", "simulation.py", "Simulated clock, scripted feeds (MVP only)")
+  }
+  ContainerDb(db, "Database", "SQLite", "Orders, events, exceptions, audit log, data tasks")
+
+  Rel(user, web, "Uses", "HTTPS, HTML forms")
+  Rel(feeds, ingest, "Sends records", "JSON / adapter call")
+  Rel(sim, ingest, "Polls scripted feeds", "every 5 min")
+  Rel(ingest, db, "Writes events")
+  Rel(engine, db, "Creates and escalates exceptions")
+  Rel(web, workflow, "Submits actions")
+  Rel(workflow, db, "Writes status and audit log")
+  Rel(web, kpi, "Reads outcomes")
+  Rel(web, tt, "Draws courses")
+  Rel(kpi, db, "Reads")
+
+  UpdateLayoutConfig($c4ShapeInRow="4", $c4BoundaryInRow="1")
