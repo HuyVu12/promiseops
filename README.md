@@ -15,7 +15,7 @@ No Company A data is used.
 |---|---|
 | Read order and fulfilment events from existing systems | `app/ingest.py`, Data health page, `POST /api/events` |
 | Two exception types: pick not confirmed, dispatch not confirmed | `app/engine.py`, Exception queue |
-| Priority queue, ownership, response timer and escalation | Exception queue, exception detail page |
+| Priority queue, ownership, response timer and escalation | Exception queue (timetable view), exception detail page |
 | Actions, reasons and outcomes logged | Activity log on every exception |
 | KPI against the original promise, B2B and B2C separated | Outcomes page |
 | Data freshness guard | Source pills, stale banner, data-quality tasks |
@@ -29,6 +29,7 @@ Rules that come straight from the proposal:
 - Every outcome requires written evidence.
 - The original promise can never be edited, so KPIs stay honest.
 - A missing event only counts if the source was actually read after the milestone; when the fulfilment feed is older than 30 minutes, alerts pause and a data-quality task opens.
+- Interface in English and Vietnamese; system sentences (alert reasons, audit notes, errors) are translated, text typed by people is not.
 - Nothing is written back to source systems.
 
 ## Run locally
@@ -40,14 +41,15 @@ python -m pip install -r requirements.txt
 python -m uvicorn app.main:app --port 8000
 ```
 
-Open http://127.0.0.1:8000.
+Open http://127.0.0.1:8000 for the landing page, or http://127.0.0.1:8000/app for the working tool.
+The language switch (English / Tiếng Việt) is in the left rail and remembered per browser.
 The database is created and seeded on first start in `data/promiseops.db`.
 
 ## Demo script (about 5 minutes)
 
 The yellow bar at the bottom is a demo harness only: it replaces real feeds and wall-clock time.
 
-1. 09:00 - queue is empty, both feeds fresh.
+1. Open `/app`. 09:00 - every order is a purple course of four controls on one timetable; the red line is now; no exceptions yet.
 2. Click **+30 min**. At 09:30, SE-1042 and SE-1051 appear: no pick confirmation, 30 minutes left before the 10:00 route.
 3. Open **SE-1051**, take ownership, record **Verified on floor - alert was wrong** with the evidence.
 4. Open **SE-1042**, take ownership. Expedite is disabled for a coordinator, so escalate to the shift lead.
@@ -83,11 +85,19 @@ app/
   engine.py      exception rules, freshness guard, escalation
   workflow.py    human actions with role checks and audit
   kpi.py         outcomes against the original promise
+  timetable.py   course geometry: four controls on one shared time axis
+  i18n.py        English / Vietnamese text
   simulation.py  demo clock and scripted feeds (replaced by scheduled polls in production)
   main.py        web pages and JSON API
   db.py          SQLite schema
   config.py      market configuration (shared engine, local thresholds)
 ```
+
+## Documents
+
+- `docs/architecture/` - C4 models (`.mmd`) and `build_diagrams.py`, which produces the 2-page System Diagram PDF.
+- `docs/journey/` - `capture.py` records the SE-1042 journey from a running app; `build_journey.py` produces the 2-page User Journey PDF.
+- `PRODUCT.md` and `.impeccable/surfaces/` - product truth and the design direction used for the UI.
 
 ## API
 
