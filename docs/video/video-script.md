@@ -1,7 +1,7 @@
 # MVP.mp4 - recording script (target 6:00, hard limit 7:00)
 
 Record the browser at 1440x900 (or 1920x1080 at 125% zoom), English UI.
-Before recording: run `.un.ps1` in the repository root, open http://127.0.0.1:8000/app?lang=en, click **Reset scenario**, sign in as **DC coordinator**.
+Before recording: run `.\run.ps1` in the repository root, open http://127.0.0.1:8000/app?lang=en, click **Reset scenario**, sign in as **DC coordinator**.
 Recorder: OBS Studio or Xbox Game Bar (Win+G).
 Narration is in English; `MVP.srt` in this folder has the same lines as subtitles if you prefer on-screen text.
 Do not show API keys, passwords or other windows.
