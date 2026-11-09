@@ -1,33 +1,240 @@
-# MVP.mp4 - recording script (target 6:30, hard limit 7:00)
+# MVP.mp4 — recorded English script
 
-Record the browser at 1920x1080 (or 1440x900), English UI, browser zoom 100 %.
-Before recording: run `.\run.ps1` in the repository root, open http://127.0.0.1:8000/app?lang=en, click **Reset scenario**, choose **DC coordinator** in the rail.
-Recorder: OBS Studio or Xbox Game Bar (Win+G). Insert the four slides from `docs/video/slides/` where the table says so.
-Narration is in English; `MVP.srt` has the same lines as subtitles. Burn them in or upload them next to the video.
-Do not show API keys, passwords, e-mail or other windows.
+Final video: 5:23. Recorded against commit `1e70c79`. All data is fictional. See `recording-notes.md` for media details and verification scope.
 
-Every time below is what the app records, because each recorded action moves the demo clock by one minute.
+Actions run through TIA; the edit shows the action followed by its observed result during narration. The first scene uses the title card; the final three scenes use the changes, architecture and closing cards.
 
-| # | Time | On screen (do exactly this) | Narration |
-|---|---|---|---|
-| 1 | 0:00-0:25 | Slide `1-title.png` | We are team NgaChainAILayer2. In Round 1 we found that late deliveries at Company A start as exceptions nobody owns in time, and proposed PromiseOps: catch orders that are about to miss their original promise early enough to save them, give each one an owner, and prove the result. This is the working MVP. It runs locally and all data is fictional. |
-| 2 | 0:25-0:45 | Queue at 09:00. Point at the rail feeds and the hour axis | It is 09:00 at DC Stockholm South. Every order is a course of four controls on one timetable: pick, dispatch cutoff, last viable dispatch, and the promise. The red line is now. The yellow bar at the bottom is the demo harness: it stands in for the real order and warehouse systems and for the clock. |
-| 3 | 0:45-1:15 | Click **+30 min**. Hover the SE-1042 row | At 09:30 two orders missed their pick. SE-1042 is the order from our Round 1 proposal: a B2B site delivery of plasterboard, promised for 14:00, on the 10:00 route. It ties with SE-1051, and B2B goes first. The rule only fires because the warehouse feed was read after 09:30: silence is never treated as proof. |
-| 4 | 1:15-1:45 | Open **SE-1042**, **Take ownership**. Point at the disabled *Expedited* option. Type the escalation note "Not picked: picker on break. Need a priority pick to make the 10:00 route." **Escalate** | Anna, the coordinator, takes ownership, which stops the fifteen-minute escalation timer. The goods were not picked. An expedite spends warehouse capacity, so a coordinator cannot approve it: she escalates to the shift lead with the reason. |
-| 5 | 1:45-2:20 | Rail: switch role to **Shift lead**. Choose *Expedited by shift lead*, note "Moved a picker from aisle 3; priority pick, loaded on the 10:15 shuttle", cost **10**, **Record outcome**. Scroll to the activity log | Erik, the shift lead, moves a picker and records the expedite with evidence and its cost, ten euro. Round 1 promised that the cost of every action is logged, so Finance can check our business-case assumption. The activity log shows who took the case, who escalated, who decided, why, and when. Nothing is written back to the warehouse system. |
-| 6 | 2:20-2:40 | Switch back to **DC coordinator**. Queue, open **SE-1051**, **Take ownership**, *Verified on floor - alert was wrong*, note "Picker Jonas: tote packed 09:20, handheld was offline", **Record outcome** | SE-1051 was packed at 09:20; the handheld synced late. Anna closes it as a false alarm with evidence. That number tells us later how precise the rules are. |
-| 7 | 2:40-3:15 | Queue: **Simulate feed outage**, then **+30 min**, **+15 min**. Point at the banner, the red feed in the rail and the grey dashed controls | What if the warehouse feed goes quiet? After thirty minutes the feed turns red, a data task opens for the integration desk, and no new alerts are raised. Controls that passed while the feed was silent are shown as unknown, not missed: an empty feed proves nothing. |
-| 8 | 3:15-3:45 | **Resume fulfilment feed**, **+5 min**. Open **SE-1077**, **Take ownership**, *Promise at risk - handed to customer service*, note "No vehicle until 11:50. Customer service called the site manager with a 14:35 ETA", **Record outcome** | When the feed recovers, the backlog arrives first and only then do the rules run. They find a real problem: SE-1077 is picked but has no vehicle until 11:50. The promise cannot be kept, so Anna hands it to customer service, who give the site a new time. |
-| 9 | 3:45-4:10 | **Orders**, click **+5 h**. Point at SE-1042 and SE-1077 | Five hours later. SE-1042 was picked and dispatched late, shown in brown, but delivered at 12:32, before its 14:00 promise. SE-1077 arrived at 14:35 and is counted late, even though the customer was informed. |
-| 10 | 4:10-4:50 | **Outcomes**. Point at the four tiles, the scorecard and the value card | Outcomes are measured against the original promise, which can never be edited. An order counts as late as soon as its promise passes without a delivery, so silence never looks like success. One late delivery was prevented. At the Round 1 assumption of twenty-five euro per late delivery that is worth twenty-five euro, next to ten euro of logged cost. The scorecard uses the Round 1 pilot targets, and says honestly that three alerts are too few to judge. |
-| 11 | 4:50-5:15 | **Reset scenario**, **+30 min**, **+5 h**, **+1 h**, then **Outcomes** | Now the same morning when nobody acts. SE-1042 is picked at 11:20 and delivered at 14:25: late. On-time falls from 93.3 to 86.7 percent. That difference is the value PromiseOps is meant to prove in the pilot, against control stores. |
-| 12 | 5:15-5:25 | Rail: switch **Language** to Tiếng Việt, show the queue, switch back | The interface also runs in Vietnamese, including system messages. |
-| 13 | 5:25-6:05 | Slide `2-changes.png` | What changed since Round 1, and why. The scope is the one we proposed: one DC, two rules, one owner, escalation, outcomes against the original promise, read only, no AI in the product. We alert at the milestone instead of after a fifteen-minute grace, because the read-after-milestone rule already prevents false alarms and leaves more time to act; the grace stays a setting for the pilot. A demo harness replaces Company A's feeds and clock, and a role switch replaces single sign-on. We added the timetable view, Vietnamese, cost logging and the Round 1 scorecard. |
-| 14 | 6:05-6:30 | Slide `3-architecture.png`, then `4-close.png` | Under the hood: one FastAPI service with clear modules, SQLite, idempotent ingestion through the same adapter for polled and pushed data, an API key for integrations, and 46 automated tests, including a browser test of this journey. Every closed case is a labelled example for the risk model planned after Gate 2. Thank you. |
+## 1. PromiseOps 1
 
-## Checklist after recording
+We are team Nga Chain AI Layer Two. This is Promise Ops, our working MVP for protecting the original delivery promise. All data in this demonstration is fictional.
 
-- Length under 7:00; export as MP4 (H.264, 1080p), file name `MVP.mp4`.
-- Narration audible, or subtitles from `MVP.srt` burned in or attached.
-- No other windows, notifications, passwords, keys or e-mail visible.
-- Check the numbers on screen match the narration: 93.3 % with action, 86.7 % without, EUR 25 estimated, EUR 10 logged.
+Actions:
+
+- `{"do": "click", "target": "[data-testid=reset]"}`
+- `{"do": "select", "field": "[data-testid=role]", "option": "coordinator"}`
+
+## 2. PromiseOps 2
+
+It is nine in the morning at Stockholm South. Each order follows four controls: pick, dispatch cutoff, last viable dispatch, and the promised delivery time. The red line marks now.
+
+## 3. PromiseOps 3
+
+The yellow controls simulate feeds and time. The rules, ownership checks and outcome calculations run inside the application.
+
+## 4. PromiseOps 4
+
+Let us move forward thirty minutes.
+
+Actions:
+
+- `{"do": "click", "target": "[data-testid=adv-30]"}`
+
+## 5. PromiseOps 5
+
+Two orders have missed their pick milestone. Order S E ten forty two comes first because business deliveries win ties. Its original promise is two in the afternoon.
+
+Observed text required: `SE-1042`.
+
+## 6. PromiseOps 6
+
+The warehouse feed has been read after the milestone. That makes the missing confirmation actionable. We open the case.
+
+Actions:
+
+- `{"do": "click", "target": "[data-testid=row-SE-1042] a.order-link"}`
+
+## 7. PromiseOps 7
+
+Anna takes ownership. The system records her response and stops the fifteen minute escalation timer.
+
+Actions:
+
+- `{"do": "click", "target": "[data-testid=ack]"}`
+
+## 8. PromiseOps 8
+
+An expedite uses warehouse capacity. The coordinator cannot approve it, so Anna records the reason and escalates to the shift lead.
+
+Actions:
+
+- `{"do": "type", "field": "[data-testid=esc-note]", "value": "Pick not confirmed. Priority pick needed to protect the original delivery promise."}`
+- `{"do": "click", "target": "[data-testid=escalate]"}`
+
+Observed text required: `Pick not confirmed. Priority pick needed to protect the original delivery promise.`.
+
+## 9. PromiseOps 9
+
+We switch to the shift lead. This role has permission to record an expedite.
+
+Actions:
+
+- `{"do": "select", "field": "[data-testid=role]", "option": "shift_lead"}`
+
+## 10. PromiseOps 10
+
+Erik allocates a picker, records the evidence, and logs a ten euro intervention cost.
+
+Actions:
+
+- `{"do": "click", "target": "[data-testid=res-expedited]"}`
+- `{"do": "type", "field": "[data-testid=resolve-note]", "value": "Priority pick assigned; warehouse confirms loading for the next available departure."}`
+- `{"do": "type", "field": "[data-testid=resolve-cost]", "value": "10"}`
+
+Observed text required: `Priority pick assigned; warehouse confirms loading for the next available departure.`.
+
+## 11. PromiseOps 11
+
+The outcome is recorded. The activity log preserves who owned, escalated and decided the case, with the evidence and cost.
+
+Actions:
+
+- `{"do": "click", "target": "[data-testid=resolve]"}`
+
+## 12. PromiseOps 12
+
+Next, we return to the coordinator and investigate order S E ten fifty one.
+
+Actions:
+
+- `{"do": "select", "field": "[data-testid=role]", "option": "coordinator"}`
+- `{"do": "open", "url": "http://127.0.0.1:8768/app"}`
+- `{"do": "click", "target": "[data-testid=row-SE-1051] a.order-link"}`
+- `{"do": "click", "target": "[data-testid=ack]"}`
+
+## 13. PromiseOps 13
+
+The picker confirms that the goods were packed before the milestone. The handheld was offline. Anna closes this as a false alarm, with written evidence.
+
+Actions:
+
+- `{"do": "click", "target": "[data-testid=res-false_alarm]"}`
+- `{"do": "type", "field": "[data-testid=resolve-note]", "value": "Picker confirms tote packed at 09:20; handheld was offline."}`
+- `{"do": "click", "target": "[data-testid=resolve]"}`
+
+Observed text required: `Picker confirms tote packed at 09:20; handheld was offline.`.
+
+## 14. PromiseOps 14
+
+What happens if the warehouse feed goes quiet? We pause it and advance forty five minutes.
+
+Actions:
+
+- `{"do": "open", "url": "http://127.0.0.1:8768/app"}`
+- `{"do": "click", "target": "[data-testid=feed-pause]"}`
+- `{"do": "click", "target": "[data-testid=adv-30]"}`
+- `{"do": "click", "target": "[data-testid=adv-15]"}`
+
+## 15. PromiseOps 15
+
+The stale feed warning is visible. New absence based alerts pause, uncertain controls are marked unknown, and a data quality task opens.
+
+## 16. PromiseOps 16
+
+We resume the feed and advance five minutes. The backlog arrives before the rules evaluate the orders.
+
+Actions:
+
+- `{"do": "click", "target": "[data-testid=feed-resume]"}`
+- `{"do": "click", "target": "[data-testid=adv-5]"}`
+
+## 17. PromiseOps 17
+
+Order S E ten seventy seven now has a genuine dispatch problem. It is picked, but no vehicle is available in time.
+
+## 18. PromiseOps 18
+
+Anna takes ownership and records a handoff to customer service, with the expected arrival time. This records the handoff; the MVP does not send a customer message.
+
+Actions:
+
+- `{"do": "click", "target": "[data-testid=row-SE-1077] a.order-link"}`
+- `{"do": "click", "target": "[data-testid=ack]"}`
+- `{"do": "click", "target": "[data-testid=res-customer_notified]"}`
+- `{"do": "type", "field": "[data-testid=resolve-note]", "value": "No vehicle until 11:50. Customer service handoff recorded with expected arrival 14:35."}`
+- `{"do": "click", "target": "[data-testid=resolve]"}`
+
+Observed text required: `No vehicle until 11:50. Customer service handoff recorded with expected arrival 14:35.`.
+
+## 19. PromiseOps 19
+
+We move to Orders and advance five hours to see what actually happened.
+
+Actions:
+
+- `{"do": "open", "url": "http://127.0.0.1:8768/orders"}`
+- `{"do": "click", "target": "[data-testid=adv-300]"}`
+
+## 20. PromiseOps 20
+
+Order ten forty two arrived at twelve thirty two, before its two o clock promise. Picking and dispatch were late, but the customer promise was protected.
+
+## 21. PromiseOps 21
+
+Order ten seventy seven arrived at fourteen thirty five. Informing the customer does not change the original promise: this delivery still counts as late.
+
+## 22. PromiseOps 22
+
+Outcomes closes the loop. We measure against the original promise, which cannot be edited.
+
+Actions:
+
+- `{"do": "open", "url": "http://127.0.0.1:8768/kpi"}`
+
+## 23. PromiseOps 23
+
+In this simulated morning, ninety three point three percent of orders are on time, and one late delivery was prevented. The ten euro action cost remains visible.
+
+Observed text required: `93.3`.
+
+## 24. PromiseOps 24
+
+The twenty five euro value is a business case assumption, not a measured saving. Three alerts are also too few to judge the pilot targets. The scorecard makes that limitation visible.
+
+## 25. PromiseOps 25
+
+Now we replay the same morning without intervention. We reset and advance beyond the delivery promise.
+
+Actions:
+
+- `{"do": "click", "target": "[data-testid=reset]"}`
+- `{"do": "click", "target": "[data-testid=adv-30]"}`
+- `{"do": "click", "target": "[data-testid=adv-300]"}`
+- `{"do": "click", "target": "[data-testid=adv-60]"}`
+
+## 26. PromiseOps 26
+
+Without action, order ten forty two arrives at fourteen twenty five. On time delivery falls to eighty six point seven percent. This is a controlled demo comparison, not a production result.
+
+Actions:
+
+- `{"do": "open", "url": "http://127.0.0.1:8768/kpi"}`
+
+Observed text required: `86.7`.
+
+## 27. PromiseOps 27
+
+The interface also supports Vietnamese, including system messages.
+
+Actions:
+
+- `{"do": "select", "field": "[data-testid=lang]", "option": "vi"}`
+
+## 28. PromiseOps 28
+
+We return to English for the final overview.
+
+Actions:
+
+- `{"do": "select", "field": "[data-testid=lang]", "option": "en"}`
+
+## 29. PromiseOps 29
+
+Since Round One, the milestone rule has gained a read after milestone check. It leaves time to act while avoiding alerts based on an unread feed. The demo harness and role switch stand in for real feeds and company sign in.
+
+## 30. PromiseOps 30
+
+Under the hood, one Fast API service combines ingestion, rules, workflow and read models with a SQLite database. It reads source events and never writes back to warehouse or order systems.
+
+## 31. PromiseOps 31
+
+The pilot will test these rules and collect labelled outcomes for later modelling. Today, the MVP demonstrates ownership, decision rights, evidence and honest measurement against the promise originally made. Thank you.

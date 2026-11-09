@@ -1,311 +1,299 @@
 1
-00:00:00,000 --> 00:00:02,084
-We are team NgaChainAILayer2.
+00:00:00,000 --> 00:00:05,297
+We are team Nga Chain AI Layer Two. This is
+Promise Ops, our working MVP for
 
 2
-00:00:02,134 --> 00:00:07,883
-In Round 1 we found that late deliveries at Company A start as exceptions nobody
+00:00:05,297 --> 00:00:10,524
+protecting the original delivery promise.
+All data in this demonstration is
 
 3
-00:00:07,933 --> 00:00:10,664
-owns in time, and proposed PromiseOps:
+00:00:10,524 --> 00:00:11,221
+fictional.
 
 4
-00:00:10,714 --> 00:00:16,392
-catch orders that are about to miss their original promise early enough to save
+00:00:14,172 --> 00:00:19,275
+It is nine in the morning at Stockholm
+South. Each order follows four controls:
 
 5
-00:00:16,442 --> 00:00:20,107
-them, give each one an owner, and prove the result.
+00:00:19,275 --> 00:00:24,702
+pick, dispatch cutoff, last viable dispatch,
+and the promised delivery time. The red
 
 6
-00:00:20,157 --> 00:00:21,882
-This is the working MVP.
+00:00:24,702 --> 00:00:25,671
+line marks now.
 
 7
-00:00:21,932 --> 00:00:24,950
-It runs locally and all data is fictional.
+00:00:26,282 --> 00:00:31,861
+The yellow controls simulate feeds and time.
+The rules, ownership checks and outcome
 
 8
-00:00:25,000 --> 00:00:27,278
-It is 09:00 at DC Stockholm South.
+00:00:31,861 --> 00:00:34,517
+calculations run inside the application.
 
 9
-00:00:27,328 --> 00:00:31,215
-Every order is a course of four controls on one timetable:
+00:00:34,688 --> 00:00:36,523
+Let us move forward thirty minutes.
 
 10
-00:00:31,265 --> 00:00:35,352
-pick, dispatch cutoff, last viable dispatch, and the promise.
+00:00:39,704 --> 00:00:45,002
+Two orders have missed their pick milestone.
+Order S E ten forty two comes first
 
 11
-00:00:35,402 --> 00:00:36,742
-The red line is now.
+00:00:45,002 --> 00:00:50,499
+because business deliveries win ties. Its
+original promise is two in the afternoon.
 
 12
-00:00:36,792 --> 00:00:40,076
-The yellow bar at the bottom is the demo harness:
+00:00:51,094 --> 00:00:55,491
+The warehouse feed has been read after the
+milestone. That makes the missing
 
 13
-00:00:40,126 --> 00:00:44,950
-it stands in for the real order and warehouse systems and for the clock.
+00:00:55,491 --> 00:00:57,921
+confirmation actionable. We open the case.
 
 14
-00:00:45,000 --> 00:00:48,712
-At 09:30 two orders missed their pick.
+00:01:00,516 --> 00:01:05,516
+Anna takes ownership. The system records her
+response and stops the fifteen minute
 
 15
-00:00:48,762 --> 00:00:53,354
-SE-1042 is the order from our Round 1 proposal:
+00:01:05,516 --> 00:01:06,553
+escalation timer.
 
 16
-00:00:53,404 --> 00:01:00,829
-a B2B site delivery of plasterboard, promised for 14:00, on the 10:00 route.
+00:01:09,125 --> 00:01:14,064
+An expedite uses warehouse capacity. The
+coordinator cannot approve it, so Anna
 
 17
-00:01:00,879 --> 00:01:04,885
-It ties with SE-1051, and B2B goes first.
+00:01:14,064 --> 00:01:17,253
+records the reason and escalates to the
+shift lead.
 
 18
-00:01:04,935 --> 00:01:11,578
-The rule only fires because the warehouse feed was read after 09:30:
+00:01:21,141 --> 00:01:25,472
+We switch to the shift lead. This role has
+permission to record an expedite.
 
 19
-00:01:11,628 --> 00:01:14,950
-silence is never treated as proof.
+00:01:26,079 --> 00:01:31,075
+Erik allocates a picker, records the
+evidence, and logs a ten euro intervention
 
 20
-00:01:15,000 --> 00:01:25,254
-Anna, the coordinator, takes ownership, which stops the fifteen-minute escalation
+00:01:31,075 --> 00:01:31,391
+cost.
 
 21
-00:01:25,304 --> 00:01:26,064
-timer.
+00:01:35,579 --> 00:01:40,925
+The outcome is recorded. The activity log
+preserves who owned, escalated and decided
 
 22
-00:01:26,114 --> 00:01:29,405
-The goods were not picked.
+00:01:40,925 --> 00:01:43,280
+the case, with the evidence and cost.
 
 23
-00:01:29,455 --> 00:01:38,823
-An expedite spends warehouse capacity, so a coordinator cannot approve it:
+00:01:46,422 --> 00:01:51,713
+Next, we return to the coordinator and
+investigate order S E ten fifty one.
 
 24
-00:01:38,873 --> 00:01:44,950
-she escalates to the shift lead with the reason.
+00:01:56,250 --> 00:02:01,171
+The picker confirms that the goods were
+packed before the milestone. The handheld
 
 25
-00:01:45,000 --> 00:01:53,546
-Erik, the shift lead, moves a picker and records the expedite with evidence and its
+00:02:01,171 --> 00:02:05,423
+was offline. Anna closes this as a false
+alarm, with written evidence.
 
 26
-00:01:53,596 --> 00:01:55,141
-cost, ten euro.
+00:02:11,516 --> 00:02:15,962
+What happens if the warehouse feed goes
+quiet? We pause it and advance forty five
 
 27
-00:01:55,191 --> 00:02:03,634
-Round 1 promised that the cost of every action is logged, so Finance can check our
+00:02:15,962 --> 00:02:16,401
+minutes.
 
 28
-00:02:03,684 --> 00:02:06,258
-business-case assumption.
+00:02:23,391 --> 00:02:28,435
+The stale feed warning is visible. New
+absence based alerts pause, uncertain
 
 29
-00:02:06,308 --> 00:02:14,958
-The activity log shows who took the case, who escalated, who decided, why, and when.
+00:02:28,435 --> 00:02:32,351
+controls are marked unknown, and a data
+quality task opens.
 
 30
-00:02:15,008 --> 00:02:19,950
-Nothing is written back to the warehouse system.
+00:02:32,360 --> 00:02:37,407
+We resume the feed and advance five minutes.
+The backlog arrives before the rules
 
 31
-00:02:20,000 --> 00:02:27,006
-SE-1051 was packed at 09:20; the handheld synced late.
+00:02:37,407 --> 00:02:38,653
+evaluate the orders.
 
 32
-00:02:27,056 --> 00:02:33,024
-Anna closes it as a false alarm with evidence.
+00:02:43,750 --> 00:02:49,617
+Order S E ten seventy seven now has a
+genuine dispatch problem. It is picked, but
+no
 
 33
-00:02:33,074 --> 00:02:39,950
-That number tells us later how precise the rules are.
+00:02:49,617 --> 00:02:51,643
+vehicle is available in time.
 
 34
-00:02:40,000 --> 00:02:45,079
-What if the warehouse feed goes quiet?
+00:02:51,625 --> 00:02:56,852
+Anna takes ownership and records a handoff
+to customer service, with the expected
 
 35
-00:02:45,129 --> 00:02:56,356
-After thirty minutes the feed turns red, a data task opens for the integration desk,
+00:02:56,852 --> 00:03:02,078
+arrival time. This records the handoff; the
+MVP does not send a customer message.
 
 36
-00:02:56,406 --> 00:03:00,282
-and no new alerts are raised.
+00:03:12,016 --> 00:03:15,984
+We move to Orders and advance five hours to
+see what actually happened.
 
 37
-00:03:00,332 --> 00:03:11,024
-Controls that passed while the feed was silent are shown as unknown, not missed:
+00:03:19,032 --> 00:03:23,898
+Order ten forty two arrived at twelve thirty
+two, before its two o clock promise.
 
 38
-00:03:11,074 --> 00:03:14,950
-an empty feed proves nothing.
+00:03:23,898 --> 00:03:28,163
+Picking and dispatch were late, but the
+customer promise was protected.
 
 39
-00:03:15,000 --> 00:03:24,678
-When the feed recovers, the backlog arrives first and only then do the rules run.
+00:03:28,735 --> 00:03:34,111
+Order ten seventy seven arrived at fourteen
+thirty five. Informing the customer does
 
 40
-00:03:24,728 --> 00:03:27,715
-They find a real problem:
+00:03:34,111 --> 00:03:38,463
+not change the original promise: this
+delivery still counts as late.
 
 41
-00:03:27,765 --> 00:03:33,619
-SE-1077 is picked but has no vehicle until 11:50.
+00:03:39,141 --> 00:03:43,917
+Outcomes closes the loop. We measure against
+the original promise, which cannot be
 
 42
-00:03:33,669 --> 00:03:43,586
-The promise cannot be kept, so Anna hands it to customer service, who give the site
+00:03:43,917 --> 00:03:44,325
+edited.
 
 43
-00:03:43,636 --> 00:03:44,950
-a new time.
+00:03:44,329 --> 00:03:49,555
+In this simulated morning, ninety three
+point three percent of orders are on time,
 
 44
-00:03:45,000 --> 00:03:47,057
-Five hours later.
+00:03:49,555 --> 00:03:54,526
+and one late delivery was prevented. The ten
+euro action cost remains visible.
 
 45
-00:03:47,107 --> 00:03:56,664
-SE-1042 was picked and dispatched late, shown in brown, but delivered at 12:32,
+00:03:55,094 --> 00:04:00,120
+The twenty five euro value is a business
+case assumption, not a measured saving.
 
 46
-00:03:56,714 --> 00:03:59,738
-before its 14:00 promise.
+00:04:00,120 --> 00:04:05,271
+Three alerts are also too few to judge the
+pilot targets. The scorecard makes that
 
 47
-00:03:59,788 --> 00:04:09,950
-SE-1077 arrived at 14:35 and is counted late, even though the customer was informed.
+00:04:05,271 --> 00:04:06,465
+limitation visible.
 
 48
-00:04:10,000 --> 00:04:16,895
-Outcomes are measured against the original promise, which can never be edited.
+00:04:06,516 --> 00:04:11,502
+Now we replay the same morning without
+intervention. We reset and advance beyond
+the
 
 49
-00:04:16,945 --> 00:04:24,370
-An order counts as late as soon as its promise passes without a delivery, so silence
+00:04:11,502 --> 00:04:12,511
+delivery promise.
 
 50
-00:04:24,420 --> 00:04:26,629
-never looks like success.
+00:04:21,688 --> 00:04:26,795
+Without action, order ten forty two arrives
+at fourteen twenty five. On time
 
 51
-00:04:26,679 --> 00:04:29,508
-One late delivery was prevented.
+00:04:26,795 --> 00:04:31,834
+delivery falls to eighty six point seven
+percent. This is a controlled demo
 
 52
-00:04:29,558 --> 00:04:36,364
-At the Round 1 assumption of twenty-five euro per late delivery that is worth
+00:04:31,834 --> 00:04:34,253
+comparison, not a production result.
 
 53
-00:04:36,414 --> 00:04:40,834
-twenty-five euro, next to ten euro of logged cost.
+00:04:34,922 --> 00:04:39,146
+The interface also supports Vietnamese,
+including system messages.
 
 54
-00:04:40,884 --> 00:04:48,044
-The scorecard uses the Round 1 pilot targets, and says honestly that three alerts
+00:04:39,766 --> 00:04:42,241
+We return to English for the final overview.
 
 55
-00:04:48,094 --> 00:04:49,950
-are too few to judge.
+00:04:42,844 --> 00:04:47,847
+Since Round One, the milestone rule has
+gained a read after milestone check. It
 
 56
-00:04:50,000 --> 00:04:54,135
-Now the same morning when nobody acts.
+00:04:47,847 --> 00:04:53,039
+leaves time to act while avoiding alerts
+based on an unread feed. The demo harness
 
 57
-00:04:54,185 --> 00:04:59,625
-SE-1042 is picked at 11:20 and delivered at 14:25:
+00:04:53,039 --> 00:04:56,839
+and role switch stand in for real feeds and
+company sign in.
 
 58
-00:04:59,675 --> 00:05:00,219
-late.
+00:04:56,907 --> 00:05:02,481
+Under the hood, one Fast API service
+combines ingestion, rules, workflow and read
 
 59
-00:05:00,269 --> 00:05:04,622
-On-time falls from 93.3 to 86.7 percent.
+00:05:02,481 --> 00:05:07,849
+models with a SQLite database. It reads
+source events and never writes back to
 
 60
-00:05:04,672 --> 00:05:13,268
-That difference is the value PromiseOps is meant to prove in the pilot, against
+00:05:07,849 --> 00:05:09,707
+warehouse or order systems.
 
 61
-00:05:13,318 --> 00:05:14,950
-control stores.
+00:05:09,735 --> 00:05:14,894
+The pilot will test these rules and collect
+labelled outcomes for later modelling.
 
 62
-00:05:15,000 --> 00:05:24,950
-The interface also runs in Vietnamese, including system messages.
+00:05:14,894 --> 00:05:19,612
+Today, the MVP demonstrates ownership,
+decision rights, evidence and honest
 
 63
-00:05:25,000 --> 00:05:27,553
-What changed since Round 1, and why.
-
-64
-00:05:27,603 --> 00:05:29,943
-The scope is the one we proposed:
-
-65
-00:05:29,993 --> 00:05:35,666
-one DC, two rules, one owner, escalation, outcomes against the original promise,
-
-66
-00:05:35,716 --> 00:05:37,986
-read only, no AI in the product.
-
-67
-00:05:38,036 --> 00:05:43,567
-We alert at the milestone instead of after a fifteen-minute grace, because the
-
-68
-00:05:43,617 --> 00:05:49,574
-read-after-milestone rule already prevents false alarms and leaves more time to act;
-
-69
-00:05:49,624 --> 00:05:52,461
-the grace stays a setting for the pilot.
-
-70
-00:05:52,511 --> 00:05:58,113
-A demo harness replaces Company A's feeds and clock, and a role switch replaces
-
-71
-00:05:58,163 --> 00:05:59,227
-single sign-on.
-
-72
-00:05:59,277 --> 00:06:04,950
-We added the timetable view, Vietnamese, cost logging and the Round 1 scorecard.
-
-73
-00:06:05,000 --> 00:06:06,161
-Under the hood:
-
-74
-00:06:06,211 --> 00:06:12,406
-one FastAPI service with clear modules, SQLite, idempotent ingestion through the
-
-75
-00:06:12,456 --> 00:06:18,340
-same adapter for polled and pushed data, an API key for integrations, and 46
-
-76
-00:06:18,390 --> 00:06:22,881
-automated tests, including a browser test of this journey.
-
-77
-00:06:22,931 --> 00:06:29,126
-Every closed case is a labelled example for the risk model planned after Gate 2.
-
-78
-00:06:29,176 --> 00:06:29,950
-Thank you.
+00:05:19,612 --> 00:05:23,324
+measurement against the promise originally
+made. Thank you.
