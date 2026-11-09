@@ -15,12 +15,16 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from . import db, engine, i18n, ingest, kpi, seed, simulation, timetable, workflow
-from . import timeutil as tu
-from .config import EXCEPTION_TYPES, FULFILMENT_SOURCE, MARKETS, RESOLUTION_ROLES, RESOLUTIONS, ROLES
+from promiseops.core import engine, kpi, timetable, workflow
+from promiseops.integration import ingest, simulation
+from promiseops.storage import db, seed
+from promiseops.web import i18n
+from promiseops import timeutil as tu
+from promiseops.config import EXCEPTION_TYPES, FULFILMENT_SOURCE, MARKETS, RESOLUTION_ROLES, RESOLUTIONS, ROLES
 
 BASE = Path(__file__).resolve().parent
-DB_PATH = Path(os.environ.get("PROMISEOPS_DB", BASE.parent / "data" / "promiseops.db"))
+PROJECT_ROOT = BASE.parents[2]
+DB_PATH = Path(os.environ.get("PROMISEOPS_DB", PROJECT_ROOT / "var" / "promiseops.db"))
 CFG = MARKETS["SE"]
 
 

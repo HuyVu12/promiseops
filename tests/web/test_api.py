@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    from app import main
+    from promiseops.web import app as main
 
     monkeypatch.setattr(main, "DB_PATH", tmp_path / "api.db")
     with TestClient(main.app) as c:
@@ -78,9 +78,9 @@ def test_vietnamese_interface(client):
 def test_every_template_string_has_a_vietnamese_translation():
     import re
     from pathlib import Path
-    from app.i18n import VI
+    from promiseops.web.i18n import VI
     missing = set()
-    for f in Path("app/templates").glob("*.html"):
+    for f in (Path(__file__).resolve().parents[2] / "src/promiseops/web/templates").glob("*.html"):
         for s in re.findall(r"_\('([^']+)'", f.read_text(encoding="utf8")):
             if s not in VI:
                 missing.add(s)

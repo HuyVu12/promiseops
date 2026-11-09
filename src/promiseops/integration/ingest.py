@@ -6,8 +6,8 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from . import timeutil as tu
-from .config import EVENT_TYPES, MARKETS
+from promiseops import timeutil as tu
+from promiseops.config import EVENT_TYPES, MARKETS
 
 MAX_CLOCK_SKEW = timedelta(minutes=5)
 

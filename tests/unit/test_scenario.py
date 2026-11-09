@@ -2,9 +2,10 @@
 
 import pytest
 
-from app import engine, ingest, kpi, simulation, workflow
-from app import timeutil as tu
-from app.seed import DAY, TZ
+from promiseops import timeutil as tu
+from promiseops.core import kpi, workflow
+from promiseops.integration import ingest, simulation
+from promiseops.storage.seed import DAY, TZ
 
 
 def at(hhmm):

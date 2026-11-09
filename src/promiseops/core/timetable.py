@@ -10,7 +10,7 @@ import sqlite3
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
-from . import timeutil as tu
+from promiseops import timeutil as tu
 
 # Planned control, the event that punches it (None: a planning limit, punched by dispatch).
 CONTROLS = (

@@ -1,6 +1,6 @@
 """Browser end-to-end test of the core journey (SE-1042). Skipped unless Playwright browsers are installed.
 
-Run: python -m pytest tests/test_e2e.py
+Run: python -m pytest tests/e2e
 """
 
 import socket
@@ -22,7 +22,7 @@ def _free_port() -> int:
 def base_url(tmp_path_factory):
     import uvicorn
 
-    from app import main
+    from promiseops.web import app as main
 
     main.DB_PATH = tmp_path_factory.mktemp("e2e") / "e2e.db"
     port = _free_port()

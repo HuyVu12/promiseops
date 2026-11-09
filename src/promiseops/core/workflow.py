@@ -5,9 +5,9 @@ from __future__ import annotations
 import sqlite3
 from datetime import datetime
 
-from . import timeutil as tu
-from .config import MARKETS, RESOLUTION_ROLES, RESOLUTIONS, ROLES
-from .engine import audit
+from promiseops import timeutil as tu
+from promiseops.config import MARKETS, RESOLUTION_ROLES, RESOLUTIONS, ROLES
+from promiseops.core.engine import audit
 
 
 class ActionError(ValueError):

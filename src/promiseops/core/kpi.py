@@ -6,7 +6,7 @@ import sqlite3
 from datetime import datetime
 from statistics import median
 
-from . import timeutil as tu
+from promiseops import timeutil as tu
 
 
 def _pct(part: int, whole: int) -> float | None:

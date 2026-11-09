@@ -5,8 +5,8 @@ from __future__ import annotations
 import sqlite3
 from datetime import datetime, timedelta
 
-from . import timeutil as tu
-from .config import EXCEPTION_TYPES, FULFILMENT_SOURCE, MARKETS, MarketConfig
+from promiseops import timeutil as tu
+from promiseops.config import EXCEPTION_TYPES, FULFILMENT_SOURCE, MARKETS, MarketConfig
 
 SYSTEM = "PromiseOps"
 

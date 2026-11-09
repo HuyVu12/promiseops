@@ -1,6 +1,6 @@
 import pytest
 
-from app import db, seed
+from promiseops.storage import db, seed
 
 
 @pytest.fixture
