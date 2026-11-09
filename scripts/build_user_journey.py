@@ -128,7 +128,7 @@ def page_story() -> str:
         f'<div class="frame"><div class="pic" style="background-image:url({img(f)}){";background-size:contain;background-repeat:no-repeat;background-position:center" if f.startswith("4") else ""}"></div>'
         f'<div class="cap"><b><span class="n">{n}</span>{t}</b><span>{c}</span></div></div>'
         for f, n, t, c in frames)
-    return f'<section class="page">{head}<div class="grid">{cells}</div><div class="foot"><span>Try it: .\run.ps1, open /app, follow the demo script in the README.</span><span>Repository: github.com/HuyVu12/promiseops (private)</span></div></section>'
+    return f'<section class="page">{head}<div class="grid">{cells}</div><div class="foot"><span>Try it: .\run.ps1, open /app, follow the demo script in the README.</span><span>Repository: github.com/HuyVu12/promiseops</span></div></section>'
 
 
 def main() -> None:
