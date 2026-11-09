@@ -29,7 +29,7 @@ CSS = """
 .box b{font-size:13.5px;line-height:1.2}.box i{font-style:normal;font-size:10.5px;opacity:.85;margin:2px 0 3px}.box span{font-size:11.2px;line-height:1.3}
 .person{background:#0f3b5f;color:#fff;border-radius:22px 22px 8px 8px}
 .person.demo{background:#fff8e1;color:#4d3b00;border:1.5px dashed #b38f1d}
-.system{background:#1f5f8f;color:#fff;border:3px solid #a626aa}
+.system{background:#0f3b5f;color:#fff;border:1.5px solid #09253c;border-top:5px solid #a626aa;box-shadow:0 6px 16px rgba(15,59,95,.12)}
 .ext{background:#e9ecef;color:#13202b;border:1px solid #9aa4ae}
 .dash{background:#fff8e1;color:#4d3b00;border:1.5px dashed #b38f1d}
 .future{background:#fff;color:#536371;border:1.5px dotted #8a96a1}
@@ -41,6 +41,7 @@ CSS = """
 .lbl{position:absolute;background:#fff;font-size:10.8px;line-height:1.25;padding:1px 4px;color:#13202b;white-space:nowrap;transform:translate(-50%,-50%)}
 .lbl em{font-style:normal;color:#536371;display:block;font-size:10.3px}
 .lbl.left{transform:translate(0,-50%)}
+.lbl.boxed{border:1px solid #dfe2dc;border-radius:3px;padding:1px 5px}
 svg{position:absolute;left:0;top:0}
 .notes{position:absolute;left:40px;right:40px;display:grid;gap:16px}
 .notes h3{margin:0 0 4px;font-size:12.5px}.notes p,.notes li{margin:0;font-size:11.4px;color:#26343f}.notes ul{margin:0;padding-left:16px}
@@ -110,16 +111,16 @@ def page_context() -> str:
         arrow([(880, 150), (710, 150)]),
         arrow([(880, 280), (710, 280)]),
         arrow([(880, 415), (710, 415)], "dashed"),
-        arrow([(580, 512), (580, 448)], "dotted"),
+        arrow([(580, 448), (580, 512)], "dotted"),
     ]))
     parts += [
-        label(355, 140, "Works the exception queue", "Browser: HTML pages and forms"),
-        label(355, 270, "Decides escalations and expedites", "Browser: HTML pages and forms"),
-        label(355, 400, "Sees data tasks, feed health", "Browser: Data health page"),
-        label(795, 130, "Sends orders + promise", "JSON, POST /api/orders"),
-        label(795, 260, "Sends fulfilment events", "JSON, POST /api/events"),
-        label(795, 395, "Scripted records, 5-min polls", "in-process; replaces both feeds"),
-        label(590, 480, "Reads labelled outcomes", "JSON, GET /api/outcomes", left=True),
+        label(355, 136, "Works the exception queue", "Browser: HTML pages and forms"),
+        label(355, 266, "Decides escalations and expedites", "Browser: HTML pages and forms"),
+        label(355, 396, "Sees data tasks, feed health", "Browser: Data health page"),
+        label(795, 126, "Sends orders + promise", "JSON, POST /api/orders"),
+        label(795, 256, "Sends fulfilment events", "JSON, POST /api/events"),
+        label(795, 391, "Scripted records, 5-min polls", "in-process; replaces both feeds"),
+        label(590, 480, "Reads labelled outcomes", "GET /api/outcomes -> training data", left=True),
     ]
     parts.append(
         '<div class="notes" style="top:628px;grid-template-columns:1fr 1fr 1fr">'
@@ -134,7 +135,7 @@ def page_context() -> str:
         '<li>AI inside the product: rules first, as argued in Round 1</li><li>Company SSO: the demo uses a role switch</li></ul></div>'
         '</div>')
     parts.append('<div class="legend" style="left:40px;top:764px"><span><s style="background:#0f3b5f"></s>Person</span>'
-                 '<span><s style="background:#1f5f8f;outline:2px solid #a626aa"></s>System in scope</span>'
+                 '<span><s style="background:#0f3b5f;border-top:3px solid #a626aa"></s>System in scope</span>'
                  '<span><s style="background:#e9ecef;border:1px solid #9aa4ae"></s>Existing external system</span>'
                  '<span><s style="background:#fff8e1;border:1.5px dashed #b38f1d"></s>Demo stand-in (MVP only)</span>'
                  '<span><s style="background:#fff;border:1.5px dotted #8a96a1"></s>Planned, not built</span></div>')
@@ -153,15 +154,18 @@ def cx(col: int) -> int:
 def page_inside() -> str:
     parts = [head("Inside PromiseOps: one container, three layers, one database",
                   "C4 levels 2 and 3. One Python service with clear modules, as proposed for the pilot; no microservices.", 2)]
-    # External actors (above the container).
+    ty, th = 84, 52            # external actors
+    by, bh = 192, 356          # container boundary (192 .. 548)
+    wy, wh, cy, ch = 222, 82, 356, 104  # web row and core row
+    dby = 576                  # database
     parts += [
-        box("person demo", 76, 92, 160, 56, "Presenter", "Demo only", "Moves the demo clock"),
-        box("ext", 302, 92, 386, 56, "Order management + warehouse systems", "External, read only", "Real feeds in the pilot"),
-        box("person", 710, 92, 342, 56, "Coordinator · shift lead · integration desk", "Persons", "Web browser"),
+        box("person demo", 76, ty, 160, th, "Presenter", "Demo only", "Moves the demo clock"),
+        box("ext", 302, ty, 386, th, "Order management + warehouse systems", "External, read only", "Real feeds in the pilot"),
+        box("person", 710, ty, 342, th, "Coordinator · shift lead · integration desk", "Persons", "Web browser"),
     ]
-    parts.append('<div class="boundary" style="left:60px;top:180px;width:1008px;height:370px"></div>')
-    parts.append('<div class="bl" style="left:176px;top:186px">Web application [Container: one Python process]</div>')
-    wy, wh, cy, ch = 214, 82, 352, 104  # web row and core row
+    parts.append(f'<div class="boundary" style="left:60px;top:{by}px;width:1008px;height:{bh}px"></div>')
+    # The container's name sits on its top edge, between the presenter (x 156) and API (x 495) arrows.
+    parts.append(f'<div class="bl" style="left:182px;top:{by - 9}px;z-index:2">Web application [Container: one Python process]</div>')
     parts += [
         box("comp mvp", C[1][0], wy, C[1][1], wh, "Demo controls", "routes/demo.py, MVP only", "Advance clock, pause feed, reset"),
         box("comp", 302, wy, 386, wh, "JSON API", "routes/api.py",
@@ -174,46 +178,41 @@ def page_inside() -> str:
         box("comp", C[4][0], cy, C[4][1], ch, "Read models", "core/queries.py, timetable.py, kpi.py", "Queue order, courses, outcomes, Round 1 scorecard"),
         box("comp", C[5][0], cy, C[5][1], ch, "Workflow", "core/workflow.py", "Role checks; evidence and cost required; audit trail"),
     ]
-    parts.append(box("db", 76, 606, 976, 52, "Database", "Container: SQLite file; PostgreSQL in the pilot",
+    parts.append(box("db", 76, dby, 976, 52, "Database", "Container: SQLite file; PostgreSQL in the pilot",
                      "orders (promise immutable) · events (unique per source + event id) · exceptions (unique per order + cause) "
                      "· audit log · data-quality tasks · ingest log"))
     mid = cy + ch // 2
+    trunk, split = 881, 166    # one browser arrow that branches into Pages and Human actions
     parts.append(svg([
-        arrow([(cx(1), 148), (cx(1), wy)], "dashed"),
-        arrow([(495, 148), (495, wy)]),
-        arrow([(cx(4), 148), (cx(4), wy)]),
-        arrow([(cx(5), 148), (cx(5), wy)]),
+        arrow([(cx(1), ty + th), (cx(1), wy)], "dashed"),
+        arrow([(495, ty + th), (495, wy)]),
+        arrow([(trunk, ty + th), (trunk, split), (cx(4), split), (cx(4), wy)]),
+        arrow([(trunk, split), (cx(5), split), (cx(5), wy)]),
         arrow([(cx(1), wy + wh), (cx(1), cy)], "dashed"),
         arrow([(cx(2), wy + wh), (cx(2), cy)]),
         arrow([(cx(4), wy + wh), (cx(4), cy)]),
         arrow([(cx(5), wy + wh), (cx(5), cy)]),
         arrow([(236, mid), (302, mid)], "dashed"),
         arrow([(462, mid), (528, mid)]),
-        arrow([(cx(1), cy + ch), (cx(1), 606)], "dashed"),
-        arrow([(cx(2), cy + ch), (cx(2), 606)]),
-        arrow([(cx(3), cy + ch), (cx(3), 606)]),
-        arrow([(cx(4), cy + ch), (cx(4), 606)]),
-        arrow([(cx(5), cy + ch), (cx(5), 606)]),
+        *[arrow([(cx(i), cy + ch), (cx(i), dby)], "dashed" if i == 1 else "solid") for i in range(1, 6)],
     ]))
     row_gap = (wy + wh + cy) // 2
+    db_lbl = cy + ch + 52      # one line for all five database labels, inside the boundary
     parts += [
-        label(505, 166, "Orders and events", "JSON over HTTP · X-API-Key", left=True),
-        label(866, 166, "HTTP, HTML forms"),
+        label(505, 162, "Orders and events", "JSON over HTTP · X-API-Key", left=True),
+        label(trunk + 8, 150, "HTTP, HTML forms", left=True),
         label(cx(1), row_gap, "clock, feed, reset"),
         label(cx(2), row_gap, "validate + store"),
         label(cx(4), row_gap, "reads"),
         label(cx(5), row_gap, "records a decision"),
-        label(269, mid - 14, "feeds"),
-        label(495, mid - 14, "then a"),
-        label(495, mid + 15, "rules cycle"),
-        label(cx(1), 582, "clock, script"),
-        label(cx(2), 500, "writes events, feed reads"),
-        label(cx(3), 530, "reads events, writes exceptions"),
-        label(cx(4), 500, "reads"),
-        label(cx(5), 530, "writes status, audit, cost"),
+        label(269, mid - 13, "feeds"),
+        label(495, mid - 13, "runs rules"),
+        *[f'<div class="lbl boxed" style="left:{cx(i)}px;top:{db_lbl}px">{html.escape(t)}</div>'
+          for i, t in [(1, "clock, script"), (2, "writes events, feed reads"), (3, "reads events, writes exceptions"),
+                       (4, "reads"), (5, "writes status, audit, cost")]],
     ]
     parts.append(
-        '<div class="cycle" style="top:674px">'
+        '<div class="cycle" style="top:648px">'
         '<div class="step"><b>1 · READ</b>The adapter reads each feed every 5 min and records that the read succeeded.</div>'
         '<div class="step"><b>2 · CHECK</b>Duplicates ignored, bad records rejected. No read after a milestone, or a feed older than 30 min: alerts pause, a data task opens.</div>'
         '<div class="step"><b>3 · DETECT</b>Two rules raise one exception per order and cause, owned by the coordinator, 15-min timer, then escalation.</div>'
