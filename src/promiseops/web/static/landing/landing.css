@@ -236,8 +236,8 @@
 .walk-video { display: block; height: 100%; width: auto; max-width: 100%; aspect-ratio: 1440 / 900; object-fit: contain; border: 1px solid var(--pt-line-2); border-radius: 12px; background: #0f3b5f; }
 @media (max-width: 1023px) { .walk-video { width: 100%; height: auto; } }
 
-/* Native scrolling, no snap: with full-screen sections, proximity snap pulled every short wheel step
-   back to the section top, so the page felt stuck. PageUp/PageDown still step between sections (pager.js). */
+/* No CSS snap: with full-screen sections, proximity snap pulled every short wheel step back to the
+   section top, so the page felt stuck. Section paging is done by pager.js (one eased glide per gesture). */
 html { scroll-snap-type: none; }
 
 /* ---------- UI/UX refactor ---------- */
