@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Outcomes{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Outcomes against the original promise</h1>
+    <p class="lede">Measured on delivered orders only, against the promise made at order time. Pilot metric definitions from the Round 1 proposal.</p>
+  </div>
+</div>
+
+{% set a = k.segments['All'] %}
+<div class="stats">
+  <div class="stat" data-testid="kpi-ontime">
+    <span class="stat-label">Delivered on time</span>
+    <span class="stat-value">{% if a.on_time_pct is none %}-{% else %}{{ a.on_time_pct }}%{% endif %}</span>
+    <span class="stat-sub">{{ a.on_time }} of {{ a.delivered }} delivered &middot; {{ a.orders - a.delivered }} still en route</span>
+  </div>
+  <div class="stat" data-testid="kpi-recovered">
+    <span class="stat-label">Flagged orders still on time</span>
+    <span class="stat-value">{% if k.recovered_pct is none %}-{% else %}{{ k.recovered_pct }}%{% endif %}</span>
+    <span class="stat-sub">{{ k.recovered }} of {{ k.flagged_delivered }} delivered orders that had an exception</span>
+  </div>
+  <div class="stat" data-testid="kpi-ack">
+    <span class="stat-label">Median time to take ownership</span>
+    <span class="stat-value">{% if k.median_ack_min is none %}-{% else %}{{ k.median_ack_min | round(0) | int }} min{% endif %}</span>
+    <span class="stat-sub">Target: within {{ CFG.ack_sla_min }} min &middot; {{ k.escalated }} escalated</span>
+  </div>
+  <div class="stat" data-testid="kpi-false">
+    <span class="stat-label">False alarms (worked alerts)</span>
+    <span class="stat-value">{% if k.false_alarm_pct is none %}-{% else %}{{ k.false_alarm_pct }}%{% endif %}</span>
+    <span class="stat-sub">Tunes the rules; high values mean alerts cost more than they save</span>
+  </div>
+</div>
+
+<div class="layout even">
+  <section class="card">
+    <h2>By segment</h2>
+    <p class="hint">B2B and B2C are reported separately, as required for the pilot evaluation.</p>
+    <table class="grid compact" data-testid="kpi-segments">
+      <thead><tr><th>Segment</th><th class="num">Orders</th><th class="num">Delivered</th><th class="num">On time</th><th class="num">Late</th><th class="num">On-time rate</th></tr></thead>
+      <tbody>
+      {% for name, s in k.segments.items() %}
+        <tr class="{{ 'strong' if name == 'All' }}">
+          <td>{{ name }}</td><td class="num">{{ s.orders }}</td><td class="num">{{ s.delivered }}</td>
+          <td class="num">{{ s.on_time }}</td><td class="num">{{ s.late }}</td>
+          <td class="num">{% if s.on_time_pct is none %}-{% else %}{{ s.on_time_pct }}%{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  <section class="card">
+    <h2>How exceptions ended</h2>
+    <p class="hint">{{ k.exceptions_total }} raised &middot; {{ k.exceptions_open }} still open &middot; {{ k.data_incidents }} data-freshness incident(s)</p>
+    <table class="grid compact" data-testid="kpi-resolutions">
+      <thead><tr><th>Outcome</th><th class="num">Count</th></tr></thead>
+      <tbody>
+      {% for key, label in RESOLUTIONS.items() %}
+        <tr><td><span class="outcome {{ key | lower }}">{{ label }}</span></td><td class="num">{{ k.by_resolution.get(key, 0) }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+
+<p class="hint footnote">This demo shows the measurement, not the result. The pilot compares 12 pilot stores against matched control stores before any business case number is claimed.</p>
+{% endblock %}

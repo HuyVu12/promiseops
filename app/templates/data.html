@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Data health{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Data health</h1>
+    <p class="lede">Alerts are only as good as the data. This page shows what the adapter accepted, rejected and when a feed went quiet.</p>
+  </div>
+</div>
+
+<div class="stats three">
+  <div class="stat"><span class="stat-label">Records accepted</span><span class="stat-value">{{ counts.get('accepted', 0) }}</span></div>
+  <div class="stat"><span class="stat-label">Duplicates ignored</span><span class="stat-value">{{ counts.get('duplicate', 0) }}</span><span class="stat-sub">Re-sent records never create new work</span></div>
+  <div class="stat"><span class="stat-label">Rejected</span><span class="stat-value">{{ counts.get('rejected', 0) }}</span><span class="stat-sub">Unknown order, bad timestamp, unknown type</span></div>
+</div>
+
+<div class="layout even">
+  <section class="card">
+    <h2>Data-quality tasks</h2>
+    {% if tasks %}
+    <table class="grid compact" data-testid="data-tasks">
+      <thead><tr><th>Source</th><th>Opened</th><th>Closed</th><th>Owner</th><th>Note</th></tr></thead>
+      <tbody>
+      {% for t in tasks %}
+        <tr class="{{ 'late' if not t.closed_at }}">
+          <td class="mono">{{ t.source }}</td><td>{{ t.opened_at | local }}</td>
+          <td>{{ t.closed_at | local if t.closed_at else 'Open' }}</td><td>{{ t.owner }}</td><td>{{ t.note }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No freshness incidents. Both feeds are reporting inside the {{ CFG.stale_after_min }}-minute limit.</p>
+    {% endif %}
+    <h2 class="section-sm">System log</h2>
+    <ol class="log">
+      {% for l in system %}
+      <li><span class="log-time">{{ l.at | local }}</span><span class="log-actor">{{ l.actor }}</span><span class="log-action">{{ l.action | replace('_', ' ') | lower }}</span><span class="log-note">{{ l.note }}</span></li>
+      {% endfor %}
+    </ol>
+  </section>
+  <section class="card">
+    <h2>Latest adapter records</h2>
+    <table class="grid compact" data-testid="ingest-log">
+      <thead><tr><th>Time</th><th>Source</th><th>Record</th><th>Result</th></tr></thead>
+      <tbody>
+      {% for l in log %}
+        <tr>
+          <td>{{ l.at | local }}</td><td class="mono">{{ l.source }}</td><td class="mono">{{ l.ref }}</td>
+          <td><span class="outcome {{ l.outcome }}">{{ l.outcome }}</span>{% if l.detail %}<span class="sub">{{ l.detail }}</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}

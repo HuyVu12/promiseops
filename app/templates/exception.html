@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}{{ x.order_id }}{% endblock %}
+{% block content %}
+<a href="/" class="crumb">&larr; Exception queue</a>
+<div class="page-head">
+  <div>
+    <h1 data-testid="exc-title">{{ x.order_id }} &middot; {{ EXCEPTION_TYPES[x.type] }}</h1>
+    <p class="lede">{{ x.reason }}</p>
+  </div>
+  <div class="state-box {{ 'resolved' if x.status == 'RESOLVED' else ('late' if remaining < 0 else ('urgent' if remaining <= 30 else '')) }}" data-testid="state">
+    {% if x.status == 'RESOLVED' %}
+      <span class="state-label">Closed {{ x.resolved_at | local }}</span>
+      <span class="state-value">{{ RESOLUTIONS[x.resolution] }}</span>
+    {% elif remaining < 0 %}
+      <span class="state-label">Intervention deadline {{ x.intervention_deadline | local }}</span>
+      <span class="state-value">Passed {{ (-remaining) | mins }} ago</span>
+    {% else %}
+      <span class="state-label">Act before {{ x.intervention_deadline | local }}</span>
+      <span class="state-value">{{ remaining | mins }} left</span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="layout">
+  <div class="col-main">
+    <section class="card">
+      <h2>Order timeline against the original promise</h2>
+      <ol class="milestones">
+        {% for label, due, ev in milestones %}
+          {% set got = done.get(ev) if ev else None %}
+          {% set overdue = (not got) and ev and (due <= now_iso) %}
+          <li class="{{ 'done' if got else ('overdue' if overdue else '') }}">
+            <span class="ms-label">{{ label }}</span>
+            <span class="ms-due">{{ due | local }}</span>
+            <span class="ms-state">
+              {% if got %}Confirmed {{ got | local }}{% if got > due %} <span class="bad-text">({{ 'late' }})</span>{% endif %}
+              {% elif overdue %}Not confirmed
+              {% elif ev %}Pending{% else %}Planning limit{% endif %}
+            </span>
+          </li>
+        {% endfor %}
+      </ol>
+      <p class="hint">The promise of {{ order.promised_at | local }} is fixed when the order is placed. PromiseOps never edits it, so outcomes stay honest.</p>
+    </section>
+
+    <section class="card">
+      <h2>Source events received</h2>
+      {% if events %}
+      <table class="grid compact">
+        <thead><tr><th>Event</th><th>Happened (source)</th><th>Received</th><th>Source ref</th></tr></thead>
+        <tbody>
+        {% for e in events %}
+          <tr>
+            <td>{{ e.type | replace('_', ' ') | title }}</td>
+            <td>{{ e.occurred_at | local }}</td>
+            <td>{{ e.received_at | local }}{% if e.received_at[:16] != e.occurred_at[:16] %} <span class="sub-inline">synced late</span>{% endif %}</td>
+            <td class="mono">{{ e.source }}/{{ e.event_id }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="muted">No fulfilment events yet for this order.</p>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <h2>Activity log</h2>
+      <ol class="log" data-testid="log">
+        {% for l in log %}
+        <li>
+          <span class="log-time">{{ l.at | local }}</span>
+          <span class="log-actor">{{ l.actor }}</span>
+          <span class="log-action act-{{ l.action | lower }}">{{ l.action | replace('_', ' ') | lower }}</span>
+          {% if l.note %}<span class="log-note">{{ l.note }}</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+    </section>
+  </div>
+
+  <aside class="col-side">
+    <section class="card facts">
+      <h2>Order</h2>
+      <dl>
+        <dt>Customer</dt><dd>{{ order.customer_ref }} <span class="tag {{ order.customer_type | lower }}">{{ order.customer_type }}</span></dd>
+        <dt>Store</dt><dd>{{ order.store }}</dd>
+        <dt>DC</dt><dd>{{ order.dc }}</dd>
+        <dt>Owner</dt><dd data-testid="owner">{{ x.owner }} <span class="muted">({{ ROLES[x.owner_role] }})</span>{% if x.escalated %} <span class="tag esc">Escalated</span>{% endif %}</dd>
+        {% if x.status == 'OPEN' %}
+        <dt>Response due</dt><dd class="{{ 'bad-text' if ack_left < 0 }}">{{ x.ack_due_at | local }}{% if ack_left < 0 %} (overdue){% else %} ({{ ack_left }} min){% endif %}</dd>
+        {% endif %}
+      </dl>
+      {% for o in others %}
+      <p class="hint">Also on this order: <a href="/exceptions/{{ o.id }}">{{ EXCEPTION_TYPES[o.type] }}</a> ({{ o.status | lower }})</p>
+      {% endfor %}
+    </section>
+
+    {% if x.status != 'RESOLVED' %}
+    <section class="card actions" data-testid="actions">
+      <h2>Your action <span class="muted">as {{ actor }}</span></h2>
+
+      {% if x.status == 'OPEN' %}
+      <form method="post" action="/exceptions/{{ x.id }}/ack">
+        <button class="primary block" data-testid="ack">Take ownership</button>
+      </form>
+      <p class="hint">Taking ownership stops the {{ CFG.ack_sla_min }}-minute escalation timer.</p>
+      {% endif %}
+
+      <form method="post" action="/exceptions/{{ x.id }}/resolve" class="stack" data-testid="resolve-form">
+        <fieldset>
+          <legend>What did you verify?</legend>
+          {% for key in ['FALSE_ALARM', 'EXPEDITED', 'CUSTOMER_NOTIFIED'] %}
+          <label class="choice {{ '' if key in allowed else 'disabled' }}">
+            <input type="radio" name="resolution" value="{{ key }}" {{ '' if key in allowed else 'disabled' }} required data-testid="res-{{ key | lower }}">
+            <span>{{ RESOLUTIONS[key] }}{% if key not in allowed %}<span class="sub">Shift lead decision</span>{% endif %}</span>
+          </label>
+          {% endfor %}
+        </fieldset>
+        <label for="resolve-note">Evidence and reason</label>
+        <textarea id="resolve-note" name="note" rows="3" required placeholder="Who you spoke to, what you saw, what happens next" data-testid="resolve-note"></textarea>
+        <button class="primary" data-testid="resolve">Record outcome</button>
+      </form>
+
+      {% if x.owner_role != 'shift_lead' %}
+      <form method="post" action="/exceptions/{{ x.id }}/escalate" class="stack">
+        <label for="esc-note">Need a decision you cannot make?</label>
+        <textarea id="esc-note" name="note" rows="2" required placeholder="What the shift lead needs to decide" data-testid="esc-note"></textarea>
+        <button data-testid="escalate">Escalate to {{ CFG.shift_lead }}</button>
+      </form>
+      {% endif %}
+
+      <form method="post" action="/exceptions/{{ x.id }}/note" class="stack">
+        <label for="add-note">Add a note</label>
+        <div class="row">
+          <input id="add-note" name="note" required placeholder="e.g. Called picker, checking aisle 14" data-testid="note">
+          <button data-testid="add-note">Add</button>
+        </div>
+      </form>
+    </section>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

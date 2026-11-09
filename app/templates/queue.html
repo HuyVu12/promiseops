@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Exception queue{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Exception queue</h1>
+    <p class="lede">Orders that may miss their original delivery promise, ordered by time left to intervene.</p>
+  </div>
+  <div class="tabs" role="tablist">
+    <a href="/?view=all" class="{{ 'on' if view == 'all' }}" data-testid="view-all">All open <span>{{ open_count }}</span></a>
+    <a href="/?view=mine" class="{{ 'on' if view == 'mine' }}" data-testid="view-mine">Assigned to me <span>{{ mine }}</span></a>
+  </div>
+</div>
+
+{% if rows %}
+<table class="grid queue" data-testid="queue">
+  <thead>
+    <tr>
+      <th>Time left to act</th>
+      <th>Order</th>
+      <th>Issue</th>
+      <th>Owner</th>
+      <th>Status</th>
+      <th class="num">Promise</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in rows %}
+    <tr class="{{ 'late' if r.remaining < 0 else ('urgent' if r.remaining <= 30 else '') }}" data-testid="row-{{ r.order_id }}">
+      <td>
+        <span class="countdown">{% if r.remaining < 0 %}Deadline passed {{ (-r.remaining) | mins }} ago{% else %}{{ r.remaining | mins }}{% endif %}</span>
+        <span class="sub">act by {{ r.intervention_deadline | local }}</span>
+      </td>
+      <td>
+        <a href="/exceptions/{{ r.id }}" class="order-link">{{ r.order_id }}</a>
+        <span class="sub">{{ r.store }} &middot; <span class="tag {{ r.customer_type | lower }}">{{ r.customer_type }}</span></span>
+      </td>
+      <td>{{ EXCEPTION_TYPES[r.type] }}<span class="sub">{{ r.reason }}</span></td>
+      <td>
+        {{ r.owner }}{% if r.escalated %} <span class="tag esc">Escalated</span>{% endif %}
+        <span class="sub">{{ ROLES[r.owner_role] }}</span>
+      </td>
+      <td>
+        {% if r.status == 'OPEN' %}
+          <span class="status open">Waiting for owner</span>
+          <span class="sub {{ 'bad-text' if r.ack_left < 0 }}">{% if r.ack_left < 0 %}response overdue{% else %}respond within {{ r.ack_left }} min{% endif %}</span>
+        {% else %}
+          <span class="status ack">In progress</span>
+          <span class="sub">since {{ r.acknowledged_at | local }}</span>
+        {% endif %}
+      </td>
+      <td class="num">{{ r.promised_at | local }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty" data-testid="queue-empty">
+  {% if stale_task %}
+  <h2>No new alerts while fulfilment data is stale</h2>
+  <p>Silence from a stale feed proves nothing. Follow the standard floor process until data recovers.</p>
+  {% else %}
+  <h2>No open exceptions{% if view == 'mine' %} assigned to you{% endif %}</h2>
+  <p>Every order with a passed milestone has a confirmed event or a recorded outcome.</p>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if recent %}
+<h2 class="section">Recently closed</h2>
+<table class="grid compact" data-testid="recent">
+  <thead><tr><th>Order</th><th>Issue</th><th>Outcome</th><th>By</th><th class="num">Closed</th></tr></thead>
+  <tbody>
+  {% for r in recent %}
+    <tr>
+      <td><a href="/exceptions/{{ r.id }}">{{ r.order_id }}</a></td>
+      <td>{{ EXCEPTION_TYPES[r.type] }}</td>
+      <td><span class="outcome {{ r.resolution | lower }}">{{ RESOLUTIONS[r.resolution] }}</span></td>
+      <td>{{ 'System' if r.resolution == 'AUTO_CLEARED' else r.owner }}</td>
+      <td class="num">{{ r.resolved_at | local }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}
