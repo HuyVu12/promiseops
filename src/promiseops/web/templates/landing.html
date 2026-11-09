@@ -157,16 +157,16 @@
           <a class="link" href="/orders">{{ _('See all orders in the demo') }}</a>
         </div>
       </div>
-      <div class="ui app fill pt" role="img" aria-label="{{ _('The exception queue beside the open case SE-1042') }}">
+      <div class="ui app fill pt" role="group" aria-label="{{ _('The exception queue beside the open case SE-1042') }}" data-preview>
         <div class="app__pane app__pane--list">
-          <div class="pt-tabs"><h3>{{ _('Exception queue') }}</h3><span class="pt-tab is-on">{{ _('All open') }} 3</span><span class="pt-tab">{{ _('Assigned to me') }} 2</span></div>
+          <div class="pt-tabs" role="tablist" aria-label="{{ _('Exception queue') }}"><h3>{{ _('Exception queue') }}</h3><button type="button" class="pt-tab is-on" role="tab" aria-selected="true" data-view="all">{{ _('All open') }} 3</button><button type="button" class="pt-tab" role="tab" aria-selected="false" data-view="mine">{{ _('Assigned to me') }} 2</button></div>
           <ul class="pt-list">
-            <li class="is-hot is-open"><div class="pt-left">{{ _('Due now') }}<span class="pt-meta">{{ _('act by') }} 10:00</span></div><div><span class="pt-id">SE-1042</span><span class="pt-tag">B2C</span><span class="pt-what">S04 Nacka · {{ _('Pick not confirmed') }}</span></div><div class="pt-own">Erik Berg<span class="pt-chip">{{ _('Escalated') }}</span><small>{{ _('respond within 5 min') }}</small></div></li>
-            <li class="is-hot"><div class="pt-left">{{ _('30m left') }}<span class="pt-meta">{{ _('act by') }} 10:30</span></div><div><span class="pt-id">SE-1060</span><span class="pt-tag">B2C</span><span class="pt-what">S02 Kungsholmen · {{ _('Pick not confirmed') }}</span></div><div class="pt-own">Anna Lind<small>{{ _('respond within 15 min') }}</small></div></li>
-            <li><div class="pt-left">{{ _('1h 30m left') }}<span class="pt-meta">{{ _('act by') }} 11:30</span></div><div><span class="pt-id">SE-1077</span><span class="pt-tag">B2B</span><span class="pt-what">S11 Bromma · {{ _('Dispatch not confirmed') }}</span></div><div class="pt-own">Anna Lind<small>{{ _('respond within 15 min') }}</small></div></li>
-            <li class="pt-band"><b>{{ _('On course') }}</b> 13</li>
+            <li class="is-hot is-open pt-click" data-owner="lead" tabindex="0" title="{{ _('Open in the live demo') }}"><div class="pt-left">{{ _('Due now') }}<span class="pt-meta">{{ _('act by') }} 10:00</span></div><div><span class="pt-id">SE-1042</span><span class="pt-tag">B2B</span><span class="pt-what">S04 Nacka · {{ _('Pick not confirmed') }}</span></div><div class="pt-own">Erik Berg<span class="pt-chip">{{ _('Escalated') }}</span><small>{{ _('respond within 5 min') }}</small></div></li>
+            <li class="is-hot pt-click" data-owner="me" tabindex="0" title="{{ _('Open in the live demo') }}"><div class="pt-left">{{ _('30m left') }}<span class="pt-meta">{{ _('act by') }} 10:30</span></div><div><span class="pt-id">SE-1060</span><span class="pt-tag">B2C</span><span class="pt-what">S02 Kungsholmen · {{ _('Pick not confirmed') }}</span></div><div class="pt-own">Anna Lind<small>{{ _('respond within 15 min') }}</small></div></li>
+            <li class="pt-click" data-owner="me" tabindex="0" title="{{ _('Open in the live demo') }}"><div class="pt-left">{{ _('1h 30m left') }}<span class="pt-meta">{{ _('act by') }} 11:30</span></div><div><span class="pt-id">SE-1077</span><span class="pt-tag">B2B</span><span class="pt-what">S11 Bromma · {{ _('Dispatch not confirmed') }}</span></div><div class="pt-own">Anna Lind<small>{{ _('respond within 15 min') }}</small></div></li>
+            <li class="pt-band" data-owner="all"><b>{{ _('On course') }}</b> 13</li>
             {% for id, store, tag, nxt in [('SE-1039', 'S06 Täby', 'B2C', 'Cutoff 10:30'), ('SE-1044', 'S08 Haninge', 'B2B', 'Cutoff 10:30'), ('SE-1047', 'S09 Lidingö', 'B2C', 'Cutoff 10:30'), ('SE-1053', 'S10 Sollentuna', 'B2C', 'Pick 10:30'), ('SE-1056', 'S12 Farsta', 'B2B', 'Pick 10:30'), ('SE-1058', 'S02 Kungsholmen', 'B2C', 'Pick 10:30'), ('SE-1031', 'S01 Södermalm', 'B2C', 'Promise 14:00')] %}
-            <li><div class="pt-next">{{ _('next') }} {{ _(nxt.split(' ')[0]) }} {{ nxt.split(' ')[1] }}</div><div><span class="pt-id">{{ id }}</span><span class="pt-tag">{{ tag }}</span><span class="pt-what">{{ store }}</span></div><div></div></li>
+            <li data-owner="all"><div class="pt-next">{{ _('next') }} {{ _(nxt.split(' ')[0]) }} {{ nxt.split(' ')[1] }}</div><div><span class="pt-id">{{ id }}</span><span class="pt-tag">{{ tag }}</span><span class="pt-what">{{ store }}</span></div><div></div></li>
             {% endfor %}
           </ul>
         </div>
@@ -186,7 +186,7 @@
                   {{ ctl(8.33, 'is-missed is-escalated') }}{{ ctl(16.67, 'is-missed') }}{{ ctl(41.67, 'is-limit') }}{{ ctl(83.33) }}
                   <span class="pt-now" style="left: 16.67%"></span>
                   <span class="pt-lbl is-down is-missed" style="left: 8.33%"><b>09:30</b>{{ _('Pick') }}<br><em>{{ _('not confirmed') }}</em></span>
-                  <span class="pt-lbl is-up is-missed is-left" style="left: 16.67%"><b>10:00</b>{{ _('Cutoff') }}<br><em>{{ _('not confirmed') }}</em></span>
+                  <span class="pt-lbl is-up is-missed" style="left: 16.67%"><b>10:00</b>{{ _('Cutoff') }}<br><em>{{ _('not confirmed') }}</em></span>
                   <span class="pt-lbl is-down" style="left: 41.67%"><b>11:30</b>{{ _('Last viable') }}</span>
                   <span class="pt-lbl is-up" style="left: 83.33%"><b>14:00</b>{{ _('Promise') }}<br>{{ _('pending') }}</span>
                 </div>

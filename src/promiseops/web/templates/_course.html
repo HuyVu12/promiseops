@@ -1,5 +1,8 @@
 {# Shared timetable drawing: the hour axis and one order's course with its four controls. #}
 
+{% set STATE_NAMES = {'punched': 'Confirmed', 'passed': 'Confirmed', 'late': 'Confirmed late', 'missed': 'Missed',
+                      'unknown': 'not known yet', 'ahead': 'Ahead'} %}
+
 {% macro axis_lane(axis, now_pct, now) -%}
 <div class="lane axis">
   {% for h in axis.hours %}<span class="hour" style="left:{{ h.pct }}%">{{ h.label if h.pct < 99 and (h.pct - now_pct) | abs > 2.5 else '' }}</span>{% endfor %}
@@ -9,34 +12,34 @@
 
 {% macro course_lane(c, axis, now_pct, big=False, show_missed=True, show_outcome=True) -%}
 <div class="lane {{ 'big' if big }}" style="--q:{{ axis.quarters }}">
-  {% for h in axis.hours %}<span class="hourline" style="left:{{ h.pct }}%"></span>{% endfor %}
-  <span class="leg {{ 'done' if c.outcome }}" style="left:{{ c.start_pct }}%;width:{{ c.end_pct - c.start_pct }}%"></span>
+  {% for h in axis.hours %}<span class="hourline" style="left:{{ h.pct }}%" aria-hidden="true"></span>{% endfor %}
+  <span class="leg {{ 'done' if c.outcome }}" style="left:{{ c.start_pct }}%;width:{{ c.end_pct - c.start_pct }}%" aria-hidden="true"></span>
   {% for s in c.stops %}
     {% set cls = s.state ~ (' escalated' if s.escalated) ~ (' limit' if s.label == 'Last viable' and s.state == 'ahead') %}
-    <span class="ctl {{ cls }}" style="left:{{ s.pct }}%" title="{{ _(s.label) }} {{ s.time }}"></span>
+    <span class="ctl {{ cls }}" style="left:{{ s.pct }}%" role="img" aria-label="{{ _(s.label) }} {{ s.time }}: {{ _(STATE_NAMES.get(s.state, 'Ahead')) }}" title="{{ _(s.label) }} {{ s.time }}"></span>
     {% if big %}
-    <span class="ctl-label {{ 'missed' if s.state == 'missed' }} {{ 'up' if loop.index0 is odd }}" style="left:{{ s.pct }}%">
+    <span class="ctl-label {{ 'missed' if s.state == 'missed' }} {{ 'up' if loop.index0 is odd }}" style="left:{{ s.pct }}%" aria-hidden="true">
       <b>{{ s.time }}</b>{{ _(s.label) }}
       <small>{% if s.actual %}{{ _('confirmed {t}', t=s.actual) }}{% elif s.state == 'missed' %}{{ _('not confirmed') }}{% elif s.label == 'Last viable' %}{{ _('planning limit') }}{% elif s.state == 'unknown' %}{{ _('not known yet') }}{% else %}{{ _('pending') }}{% endif %}</small>
     </span>
     {% else %}
     {% set first_missed = (c.stops | selectattr('state', 'equalto', 'missed') | first) %}
-    <span class="ctl-label {{ 'missed show' if s.state == 'missed' and show_missed and s is sameas first_missed }} {{ 'up' if loop.index0 is odd }}" style="left:{{ s.pct }}%">{{ _(s.label) }} {{ s.time }}</span>
+    <span class="ctl-label {{ 'missed show' if s.state == 'missed' and show_missed and s is sameas first_missed }} {{ 'up' if loop.index0 is odd }}" style="left:{{ s.pct }}%" aria-hidden="true">{{ _(s.label) }} {{ s.time }}</span>
     {% endif %}
   {% endfor %}
   {% for s in c.stops if s.actual_pct is not none and (s.label == 'Promise' or s.state == 'late') and (s.actual_pct - s.pct) | abs > 0.4 %}
-    <span class="punch" style="left:{{ s.actual_pct }}%" title="{{ _(s.label) }}: {{ _('confirmed {t}', t=s.actual) }}"></span>
+    <span class="punch" style="left:{{ s.actual_pct }}%" title="{{ _(s.label) }}: {{ _('confirmed {t}', t=s.actual) }}" aria-hidden="true"></span>
   {% endfor %}
   {% if c.outcome and show_outcome %}
     {% set d = c.stops[-1] %}
     <span class="outcome-flag {{ 'ontime' if c.outcome == 'on time' else 'late' }}" style="left:{{ [d.pct, d.actual_pct] | max }}%">{{ c.delivered }} {{ _(c.outcome) }}</span>
   {% endif %}
-  <span class="now" style="left:{{ now_pct }}%"></span>
+  <span class="now" style="left:{{ now_pct }}%" aria-hidden="true"></span>
 </div>
 {%- endmacro %}
 
-{% macro legend() -%}
-<div class="legend" aria-label="Legend">
+{% macro legend(compact=False) -%}
+<div class="legend {{ 'compact' if compact }}" role="note" aria-label="{{ _('Legend') }}">
   <span><i class="legkey"></i>{{ _('Promise course') }}</span>
   <span><i class="ctl punched"></i>{{ _('Confirmed') }}</span>
   <span><i class="ctl late"></i>{{ _('Confirmed late') }}</span>

@@ -51,7 +51,7 @@
 .pt-ctl.is-punched { background: var(--pt-course); }
 .pt-ctl.is-missed { border-color: var(--pt-red); }
 .pt-ctl.is-escalated { box-shadow: 0 0 0 2.5px var(--pt-white), 0 0 0 4.5px var(--pt-red); }
-.pt-ctl.is-limit { border-style: dotted; }
+.pt-ctl.is-limit { border-style: dashed; }
 .pt-row.is-quiet .pt-ctl { width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; border-width: 2px; }
 .pt-now { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--pt-red); z-index: 3; }
 .pt-flag { position: absolute; top: 4px; transform: translateX(-50%); background: var(--pt-red); color: #fff; font-size: 12px; font-weight: 500; padding: 1px 6px; border-radius: 3px; z-index: 4; white-space: nowrap; }
@@ -102,16 +102,16 @@
 .pt-list .pt-band { padding: 8px 14px; }
 
 /* the open pane: one exception */
-.pt-open { padding: 18px 22px; display: grid; gap: 16px; }
+.pt-open { padding: 14px 18px; display: grid; gap: 12px; }
 .pt-open__head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
 .pt-open__head h3 { margin: 0; font-size: 19px; font-weight: 500; letter-spacing: -0.01em; line-height: 1.25; font-family: var(--font-text); }
 .pt-open__head p { margin: 4px 0 0; color: var(--pt-muted); font-size: 13px; }
 .pt-due { border: 1px solid #ecd9b0; background: var(--pt-amber-bg); border-radius: 8px; padding: 8px 12px; white-space: nowrap; }
 .pt-due small { display: block; font-size: 12px; color: var(--pt-muted); }
 .pt-due b { font-size: 18px; color: var(--pt-amber); }
-.pt-card { border: 1px solid var(--pt-line); border-radius: 8px; padding: 14px 16px; background: var(--pt-white); }
+.pt-card { border: 1px solid var(--pt-line); border-radius: 8px; padding: 12px 14px; background: var(--pt-white); }
 .pt-card .pt-h { margin: 0 0 10px; font-size: 13.5px; font-weight: 500; font-family: var(--font-text); letter-spacing: 0; }
-.pt-big { position: relative; height: 176px; border-top: 1px solid var(--pt-ink); padding-top: 8px; }
+.pt-big { position: relative; height: 142px; border-top: 1px solid var(--pt-ink); padding-top: 8px; }
 .pt-big .pt-axis { position: absolute; inset: 8px 0 auto 0; height: 22px; }
 .pt-big .pt-axis span { top: 4px; bottom: auto; }
 .pt-big .pt-lane { position: absolute; inset: 30px 0 0 0; }
@@ -239,3 +239,27 @@
 /* One section per scroll step */
 html { scroll-snap-type: y proximity; }
 main > section, footer.closing, body > footer { scroll-snap-align: start; }
+
+/* ---------- UI/UX refactor ---------- */
+/* The queue preview shows the whole case (course, activity log and action) on laptops: the section
+   grows with the frame instead of cutting it, and the open pane no longer clips its text. */
+@media (min-width: 1024px) {
+  main > section#queue { height: auto; min-height: 100vh; min-height: 100svh; }
+  #queue .wrap { height: auto; }
+  #queue .app.fill { flex: none; height: auto; }
+  #queue .app { height: auto; }
+  .app > .app__pane--open { overflow: visible; }
+  .app > .app__pane--open::after { display: none; }
+  .app > .app__pane--list { max-height: 100%; }
+}
+.pt-big .pt-lane .pt-lbl.is-up { bottom: calc(50% + 13px); }
+.pt-big .pt-lane .pt-lbl.is-down { top: calc(50% + 13px); }
+.pt-big .pt-lbl { font-size: 11.5px; line-height: 1.2; }
+.pt-big .pt-lbl b { font-size: 12.5px; }
+/* interactive preview */
+button.pt-tab { font: inherit; font-size: 12px; background: var(--pt-white); cursor: pointer; }
+button.pt-tab:hover { border-color: var(--pt-sea); }
+button.pt-tab:focus-visible, .pt-click:focus-visible { outline: 2px solid var(--pt-sea); outline-offset: 2px; }
+.pt-click { cursor: pointer; transition: background-color 150ms ease-out; }
+.pt-click:hover { background: #eef3f8; }
+.pt-list li[hidden] { display: none !important; }
