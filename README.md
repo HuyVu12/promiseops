@@ -30,7 +30,7 @@ Existing order and warehouse systems keep owning orders, stock and dispatch; Pro
 
 | Deliverable | File |
 |---|---|
-| MVP demo video | `MVP.mp4` (recorded by the team from `docs/video/video-script.md`; subtitles `docs/video/MVP.srt`; slides `docs/video/slides/`) |
+| MVP demo video | [`MVP.mp4`](MVP.mp4) (5:23, 1920 × 1080, English narration and burned-in subtitles; script `docs/video/video-script.md`, subtitles `docs/video/MVP.srt`, recording details `docs/video/recording-notes.md`) |
 | User journey (2 pages) | `docs/User Journey.pdf` |
 | System diagram (2 pages) | `docs/System Diagram.pdf` |
 | AI journal | `docs/AI Journal.pdf` (source `docs/AI Journal.docx`) |
