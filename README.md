@@ -109,7 +109,9 @@ Set `PROMISEOPS_DB` to use another file, and `PROMISEOPS_API_KEY` to require an 
 `PROMISEOPS_MODE=pilot` runs the same engine on the wall clock instead of the demo clock:
 the database starts empty, OMS/WMS push records and heartbeats to the JSON API, a scheduler runs the rules every minute
 (so the 15-minute response timer and the stale-feed guard fire on their own), and the demo controls are switched off (`/sim/*` returns 404).
-Use a separate `PROMISEOPS_DB` for it; switching mode rebuilds the database.
+Use a separate `PROMISEOPS_DB` for it. A demo database is rebuilt when the mode changes, but a pilot database is never wiped:
+starting it without `PROMISEOPS_MODE=pilot`, or after a schema change, stops with an error instead.
+A scheduler cycle that fails is logged and retried the next minute, so escalation and the stale-feed guard keep running.
 
 ```powershell
 $env:PROMISEOPS_MODE = "pilot"; $env:PROMISEOPS_DB = "$env:TEMP\pilot.db"; $env:PROMISEOPS_API_KEY = "change-me"
@@ -225,10 +227,10 @@ python -m playwright install chromium
 python -m pytest
 ```
 
-44 tests:
+46 tests:
 
 - `tests/unit` - rules, escalation, auto-clear, escalation counts as work, one exception per cause, immutable promise, false alarms that turn out wrong come back, idempotent ingestion, stale-feed guard, unknown controls, poll grid, overdue counting, cost logging, scorecard, value.
-- `tests/web` - every page renders, HTTP actions and role checks, one simulated minute per action, API validation and API key, source heartbeat, pilot mode on the wall clock without demo controls, labelled outcomes, 404 page, open-redirect guard, Vietnamese rendering, and checks that every template string and user-facing error has a Vietnamese translation.
+- `tests/web` - every page renders, HTTP actions and role checks, one simulated minute per action, API validation and API key, source heartbeat, pilot mode on the wall clock without demo controls, a pilot database that a demo restart cannot wipe, a failing scheduler tick that is logged and not fatal, labelled outcomes, 404 page, open-redirect guard, Vietnamese rendering, and checks that every template string and user-facing error has a Vietnamese translation.
 - `tests/e2e` - the SE-1042 journey in a real browser, with no console errors allowed.
 
 ## Scripts and documents

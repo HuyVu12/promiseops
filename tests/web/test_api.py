@@ -223,3 +223,44 @@ def test_pilot_mode_runs_on_the_wall_clock_without_demo_controls(pilot):
 
     main.run_rules_once()  # what the scheduler does every minute
     assert len(pilot.get("/api/exceptions").json()["open"]) == 1
+
+
+def test_pilot_database_is_never_wiped_by_a_demo_restart(pilot, monkeypatch):
+    from promiseops import clock
+    from promiseops.web import deps
+
+    def order_count() -> int:
+        c = deps.db.connect(deps.settings.db_path)
+        try:
+            return c.execute("SELECT COUNT(*) FROM orders").fetchone()[0]
+        finally:
+            c.close()
+
+    from datetime import datetime, timedelta
+
+    now = datetime.fromisoformat(pilot.get("/api/health").json()["now"])
+    iso = lambda m: (now + timedelta(minutes=m)).isoformat()  # noqa: E731
+    order = {"id": "SE-9002", "market": "SE", "dc": "DC Stockholm South", "store": "S01 Sodermalm",
+             "customer_type": "B2C", "customer_ref": "Household 9002", "pick_due_at": iso(30),
+             "dispatch_cutoff_at": iso(60), "latest_dispatch_at": iso(120), "promised_at": iso(300)}
+    assert pilot.post("/api/orders", json=order).json()["outcome"] == "accepted"
+
+    monkeypatch.setattr(clock, "DEMO", False)
+    deps.ensure_db()  # same mode: kept as is
+    assert order_count() == 1
+
+    monkeypatch.setattr(clock, "DEMO", True)  # someone restarts without PROMISEOPS_MODE=pilot
+    with pytest.raises(RuntimeError, match="holds pilot data"):
+        deps.ensure_db()
+    assert order_count() == 1
+
+
+def test_a_failing_scheduler_tick_is_logged_not_fatal(monkeypatch, caplog):
+    from promiseops.web import app as main
+
+    def boom():
+        raise RuntimeError("database is locked")
+
+    monkeypatch.setattr(main, "run_rules_once", boom)
+    assert main.scheduled_tick() is False
+    assert "Scheduled rules cycle failed" in caplog.text

@@ -296,7 +296,7 @@ one FastAPI service with clear modules, SQLite, idempotent ingestion through the
 
 75
 00:06:12,456 --> 00:06:18,340
-same adapter for polled and pushed data, an API key for integrations, and 38
+same adapter for polled and pushed data, an API key for integrations, and 46
 
 76
 00:06:18,390 --> 00:06:22,881
