@@ -51,19 +51,19 @@ SDT_TEXT = [
 LOG_ROWS = [
     ("Scoping", "Read the Round 2 brief and our Round 1 deck; propose a narrow MVP scope and stack",
      "1 day", "3 h", "We chose the stack and 'no AI in the product'; scope checked against Round 1 slides 4-8",
-     "One DC, two rules, one journey; FastAPI + SQLite, server-rendered pages"),
+     "One DC, two rules, one journey; FastAPI + SQLite"),
     ("Build", "Implement source adapter, rules, escalation, workflow, KPIs and demo harness, with tests",
-     "4 days", "1 day", "Every rule has a test; we ran the demo end to end and compared it with Round 1 slide 4",
-     "Working MVP; a stale-feed bug (9 false alarms) found in screenshots and fixed at the root"),
+     "4 days", "1 day", "A test per rule; demo run end to end against Round 1 slide 4",
+     "Working MVP; stale-feed bug (9 false alarms) fixed at the root"),
     ("UI and language", "Generate UI options, build the timetable view, add English and Vietnamese",
-     "3 days", "1 day", "We picked the direction from real screens; a native speaker checked the Vietnamese",
-     "Timetable UI with a NOW line; both languages, including system messages"),
+     "3 days", "1 day", "We picked the direction from real screens; Vietnamese checked by the team",
+     "Timetable UI; English and Vietnamese"),
     ("Documents", "Build the system diagram and the user journey from the running app",
-     "1.5 days", "4 h", "Rejected diagrams with overlapping labels; checked every arrow against the code",
-     "System Diagram.pdf and User Journey.pdf, 2 pages each, times taken from the app"),
+     "1.5 days", "4 h", "Rejected overlapping auto-layouts; every arrow checked against code",
+     "Two 2-page PDFs, times from the app"),
     ("Review and hardening", "Strict AI review of the whole submission, then fixes and a refactor",
-     "2 days", "5 h", "We triaged each finding, re-ran all 38 tests and the full demo",
-     "Overdue orders count as late; cost logging and Round 1 scorecard; code split into routes and read models"),
+     "2 days", "5 h", "We triaged each finding; re-ran 38 tests and the demo",
+     "Overdue counts as late; cost log; scorecard; refactor"),
 ]
 
 DECISIONS = [
@@ -103,6 +103,44 @@ def fill_sdts(xml: str) -> str:
     return "".join(out)
 
 
+# Paragraph properties that come after <w:spacing> in the schema order of <w:pPr> (ECMA-376).
+_AFTER_SPACING = ("w:ind", "w:contextualSpacing", "w:mirrorIndents", "w:suppressOverlap", "w:jc",
+                  "w:textDirection", "w:textAlignment", "w:textboxTightWrap", "w:outlineLvl", "w:divId",
+                  "w:cnfStyle", "w:rPr", "w:sectPr", "w:pPrChange")
+CELL_SPACING = '<w:spacing w:before="60" w:after="60" w:line="260" w:lineRule="auto"/>'
+
+
+def with_row_prop(row: str, prop: str) -> str:
+    """Add a row property (<w:tblHeader/>, <w:cantSplit/>) to <w:trPr>, creating it in schema order."""
+    tag = prop.split()[0].rstrip("/>")
+    if tag in row:
+        return row
+    m = re.search(r"<w:trPr>", row)
+    if m:
+        return row[:m.end()] + prop + row[m.end():]
+    head = re.match(r"<w:tr(?: [^>]*)?>(?:<w:tblPrEx>.*?</w:tblPrEx>)?", row, re.S)
+    return row[:head.end()] + f"<w:trPr>{prop}</w:trPr>" + row[head.end():]
+
+
+def with_cell_spacing(cell: str) -> str:
+    """Give every paragraph in a table cell breathing room above and below."""
+    def fix(m: re.Match) -> str:
+        para = m.group(0)
+        if para.endswith("/>") and "</w:p>" not in para:
+            open_tag = para[:-2] + ">"
+            return f"{open_tag}<w:pPr>{CELL_SPACING}</w:pPr></w:p>"
+        ppr = re.search(r"<w:pPr>(.*?)</w:pPr>", para, re.S)
+        if not ppr:
+            open_end = para.index(">") + 1
+            return para[:open_end] + f"<w:pPr>{CELL_SPACING}</w:pPr>" + para[open_end:]
+        inner = re.sub(r"<w:spacing\b[^>]*/>", "", ppr.group(1))
+        cut = min([i for i in (inner.find("<" + t) for t in _AFTER_SPACING) if i >= 0], default=len(inner))
+        inner = inner[:cut] + CELL_SPACING + inner[cut:]
+        return para[:ppr.start(1)] + inner + para[ppr.end(1):]
+
+    return re.sub(r"<w:p(?: [^>]*)?/>|<w:p(?: [^>]*)?>.*?</w:p>", fix, cell, flags=re.S)
+
+
 def fill_table(xml: str, index: int, rows: list[tuple[str, ...]]) -> str:
     tables = list(re.finditer(r"<w:tbl>.*?</w:tbl>", xml, re.S))
     t = tables[index]
@@ -112,6 +150,8 @@ def fill_table(xml: str, index: int, rows: list[tuple[str, ...]]) -> str:
     for ri, tr in enumerate(trs):
         new_tbl.append(tbl[pos:tr.start()])
         row = tr.group(0)
+        # The header row repeats on every page; no row is split across a page break.
+        row = with_row_prop(row, "<w:tblHeader/>" if ri == 0 else "<w:cantSplit/>")
         if ri >= 1 and ri - 1 < len(rows):
             values = rows[ri - 1]
             cells = list(re.finditer(r"<w:tc>.*?</w:tc>", row, re.S))
@@ -125,7 +165,7 @@ def fill_table(xml: str, index: int, rows: list[tuple[str, ...]]) -> str:
                     cell = cell[:selfclosed.start()] + f"<w:p{selfclosed.group(1) or ''}>{run(values[ci])}</w:p>" + cell[selfclosed.end():]
                 else:
                     cell = re.sub(r"(<w:p[ >].*?)(</w:p>)", lambda m: m.group(1) + run(values[ci]) + m.group(2), cell, count=1, flags=re.S)
-                new_row.append(cell)
+                new_row.append(with_cell_spacing(cell))
                 cpos = c.end()
             new_row.append(row[cpos:])
             row = "".join(new_row)
