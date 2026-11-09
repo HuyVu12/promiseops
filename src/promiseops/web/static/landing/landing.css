@@ -236,9 +236,9 @@
 .walk-video { display: block; height: 100%; width: auto; max-width: 100%; aspect-ratio: 1440 / 900; object-fit: contain; border: 1px solid var(--pt-line-2); border-radius: 12px; background: #0f3b5f; }
 @media (max-width: 1023px) { .walk-video { width: 100%; height: auto; } }
 
-/* One section per scroll step */
-html { scroll-snap-type: y proximity; }
-main > section, footer.closing, body > footer { scroll-snap-align: start; }
+/* Native scrolling, no snap: with full-screen sections, proximity snap pulled every short wheel step
+   back to the section top, so the page felt stuck. PageUp/PageDown still step between sections (pager.js). */
+html { scroll-snap-type: none; }
 
 /* ---------- UI/UX refactor ---------- */
 /* The queue preview shows the whole case (course, activity log and action) on laptops: the section
@@ -263,3 +263,5 @@ button.pt-tab:focus-visible, .pt-click:focus-visible { outline: 2px solid var(--
 .pt-click { cursor: pointer; transition: background-color 150ms ease-out; }
 .pt-click:hover { background: #eef3f8; }
 .pt-list li[hidden] { display: none !important; }
+/* Nav links (Queue, Workflow, ...) glide to their section instead of jumping; off under reduced motion. */
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
