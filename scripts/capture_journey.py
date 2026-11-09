@@ -4,7 +4,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 BASE = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8766"
-OUT = Path(__file__).resolve().parent / "shots"
+OUT = Path(__file__).resolve().parents[1] / "docs" / "journey" / "shots"
 OUT.mkdir(exist_ok=True)
 
 with sync_playwright() as p:

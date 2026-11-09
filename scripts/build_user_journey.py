@@ -1,5 +1,5 @@
 """Builds 'User Journey.pdf' (2 pages, A4 landscape): a journey map for order SE-1042 and a storyboard
-of real screens captured by capture.py. Run: python docs/journey/build_journey.py <out.pdf>
+of real screens captured by capture.py. Run: python scripts/build_user_journey.py [out.pdf]
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1] / "docs" / "journey"
 OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE / "User Journey.pdf"
 W, H = 1123, 794
 
@@ -128,7 +128,7 @@ def page_story() -> str:
         f'<div class="frame"><div class="pic" style="background-image:url({img(f)}){";background-size:contain;background-repeat:no-repeat;background-position:center" if f.startswith("4") else ""}"></div>'
         f'<div class="cap"><b><span class="n">{n}</span>{t}</b><span>{c}</span></div></div>'
         for f, n, t, c in frames)
-    return f'<section class="page">{head}<div class="grid">{cells}</div><div class="foot"><span>Try it: python -m uvicorn app.main:app, open /app, follow the demo script in the README.</span><span>Repository: github.com/HuyVu12/promiseops (private)</span></div></section>'
+    return f'<section class="page">{head}<div class="grid">{cells}</div><div class="foot"><span>Try it: .\run.ps1, open /app, follow the demo script in the README.</span><span>Repository: github.com/HuyVu12/promiseops (private)</span></div></section>'
 
 
 def main() -> None:

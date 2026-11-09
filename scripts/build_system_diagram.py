@@ -1,7 +1,7 @@
 """Builds 'System Diagram.pdf' (2 pages, A4 landscape) from hand-placed C4 boxes and orthogonal arrows.
 
 Mermaid's automatic C4 layout overlapped labels, so the PDF is laid out explicitly; the .mmd files in
-this folder stay as the text source of the same model. Run: python docs/architecture/build_diagrams.py
+this folder stay as the text source of the same model. Run: python scripts/build_system_diagram.py [out.pdf]
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1] / "docs" / "architecture"
 OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE / "System Diagram.pdf"
 W, H = 1123, 794
 

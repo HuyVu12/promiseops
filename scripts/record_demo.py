@@ -1,11 +1,11 @@
 """Records an annotated walkthrough of the PromiseOps demo for the landing page.
 
 Drives the real app with Playwright, shows a caption card ("what is happening now") and highlights
-each control before it is used. Writes app/static/landing/demo-<lang>.webm and a poster image.
+each control before it is used. Writes src/promiseops/web/static/landing/demo-<lang>.webm and a poster image.
 
 Run against a separate server so nobody's session is disturbed:
-  PROMISEOPS_DB=/tmp/demo.db python -m uvicorn app.main:app --port 8766
-  python docs/demo/record_demo.py en http://127.0.0.1:8766
+  PROMISEOPS_DB=/tmp/demo.db python -m uvicorn --app-dir src promiseops.web.app:app --port 8766
+  python scripts/record_demo.py en http://127.0.0.1:8766
 """
 
 from __future__ import annotations
@@ -19,8 +19,8 @@ from playwright.sync_api import Page, sync_playwright
 
 LANG = sys.argv[1] if len(sys.argv) > 1 else "en"
 BASE = sys.argv[2] if len(sys.argv) > 2 else "http://127.0.0.1:8766"
-ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "app" / "static" / "landing"
+ROOT = Path(__file__).resolve().parents[1]
+OUT = ROOT / "src" / "promiseops" / "web" / "static" / "landing"
 W, H = 1440, 900
 
 T = {
