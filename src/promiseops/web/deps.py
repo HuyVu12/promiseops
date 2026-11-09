@@ -49,8 +49,18 @@ def ensure_db() -> None:
     conn = db.connect(settings.db_path)
     try:
         db.init(conn)
-        if not db.is_current(conn) or db.get_meta(conn, "mode") != clock.mode():
-            seed.seed(conn) if clock.DEMO else seed.init_empty(conn)
+        stored_mode = db.get_meta(conn, "mode")
+        if db.is_current(conn) and stored_mode == clock.mode():
+            return
+        if stored_mode == "pilot":
+            # Pilot data is real work (owners, decisions, costs). Never wipe it because a restart
+            # forgot PROMISEOPS_MODE or the schema moved on; make a person decide.
+            raise RuntimeError(
+                f"{settings.db_path} holds pilot data. Refusing to rebuild it "
+                f"(mode now: {clock.mode()}, schema current: {db.is_current(conn)}). "
+                "Start with PROMISEOPS_MODE=pilot, or point PROMISEOPS_DB at another file."
+            )
+        seed.seed(conn) if clock.DEMO else seed.init_empty(conn)
     finally:
         conn.close()
 

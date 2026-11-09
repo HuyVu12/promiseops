@@ -101,7 +101,7 @@ def slide_architecture() -> str:
           <p><b>Read only:</b> nothing is written back to order or warehouse systems.</p>
           <p><b>Idempotent ingestion</b> on source + event id, for polled and pushed records alike.</p>
           <p><b>API key</b> for integrations; demo role switch instead of SSO.</p>
-          <p><b>38 automated tests</b>: rules, escalation, stale feed, KPIs, HTTP, translations and a real-browser run of this journey.</p>
+          <p><b>46 automated tests</b>: rules, escalation, stale feed, KPIs, HTTP, translations and a real-browser run of this journey.</p>
         </div>
       </div>
     </div>""")

@@ -65,7 +65,7 @@ T = {
         "s15": ("Có cả tiếng Anh", "Toàn bộ giao diện, kể cả thông báo hệ thống, đổi ngôn ngữ chỉ với một lần bấm."),
         "s16": ("Đó là vòng xử lý khép kín", "Phát hiện sớm, một người phụ trách, quyền quyết định rõ ràng, có bằng chứng và chi phí, đo so với cam kết."),
         "esc_note": "Chưa lấy hàng: nhân viên đang nghỉ. Cần lấy gấp cho kịp chuyến 10:00.",
-        "exp_note": "Điều một nhân viên từ dãy 3 sang; lấy gấp, xếp lên chuyến 10:30.",
+        "exp_note": "Điều một nhân viên từ dãy 3 sang; lấy gấp, xếp lên chuyến 10:15.",
         "fa_note": "Nhân viên Jonas: đã đóng thùng 09:20, máy quét mất kết nối. Đã báo lỗi máy quét.",
         "cs_note": "Không có xe tới 11:50. Chăm sóc khách hàng đã báo quản lý công trình giờ giao mới 14:35.",
         "step": "Bước",
