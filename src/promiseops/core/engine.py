@@ -22,6 +22,8 @@ SYSTEM = "PromiseOps"
 AWAITED_EVENTS = {
     "MISSING_PICK": ("PICK_CONFIRMED",),
     "MISSING_DISPATCH": ("DISPATCHED", "DELIVERED"),
+    "PICK_STILL_MISSING": ("PICK_CONFIRMED",),
+    "DISPATCH_STILL_MISSING": ("DISPATCHED", "DELIVERED"),
 }
 
 
@@ -64,19 +66,28 @@ def _guard_freshness(conn: sqlite3.Connection, now: datetime, cfg: MarketConfig)
     ).fetchone()
     if stale and not open_task:
         age = source_age_min(conn, FULFILMENT_SOURCE, now)
+        note = (
+            f"No fulfilment data for {age} min (limit {cfg.stale_after_min}). "
+            "Missing-event alerts paused to avoid false alarms."
+            if age is not None else
+            "No fulfilment data received yet. Missing-event alerts paused to avoid false alarms."
+        )
         conn.execute(
             "INSERT INTO data_tasks(source, owner, opened_at, note) VALUES (?, ?, ?, ?)",
-            (
-                FULFILMENT_SOURCE, cfg.data_owner, tu.iso(now),
-                f"No fulfilment data for {age} min (limit {cfg.stale_after_min}). "
-                "Missing-event alerts paused to avoid false alarms.",
-            ),
+            (FULFILMENT_SOURCE, cfg.data_owner, tu.iso(now), note),
         )
         audit(conn, None, now, SYSTEM, "DATA_STALE", "Fulfilment feed stale, absence-based alerts paused")
     elif not stale and open_task:
         conn.execute("UPDATE data_tasks SET closed_at = ? WHERE id = ?", (tu.iso(now), open_task["id"]))
         audit(conn, None, now, SYSTEM, "DATA_RECOVERED", "Fulfilment feed fresh again, alerts resumed")
     return not stale
+
+
+def _dismissed(conn: sqlite3.Connection, order_id: str, type_: str) -> bool:
+    """True when a person closed this order's alert of the given type as a false alarm."""
+    return conn.execute(
+        "SELECT 1 FROM exceptions WHERE order_id = ? AND type = ? AND resolution = 'FALSE_ALARM'", (order_id, type_)
+    ).fetchone() is not None
 
 
 def _create_exception(
@@ -115,6 +126,15 @@ def _detect(conn: sqlite3.Connection, now: datetime, cfg: MarketConfig) -> None:
                 o["dispatch_cutoff_at"], now, cfg,
             )
         if not picked:
+            # A pick alert closed as a false alarm must not silence the order: if the pick is still
+            # missing when the route leaves, the case comes back while the last viable dispatch is ahead.
+            if read_until >= tu.parse(o["dispatch_cutoff_at"]) and _dismissed(conn, o["id"], "MISSING_PICK"):
+                _create_exception(
+                    conn, o, "PICK_STILL_MISSING",
+                    f"Closed as a false alarm, but still no pick confirmation at the {tu.local(o['dispatch_cutoff_at'], cfg.tz)} "
+                    f"cutoff; last dispatch that keeps the promise is {tu.local(o['latest_dispatch_at'], cfg.tz)}.",
+                    o["latest_dispatch_at"], now, cfg,
+                )
             continue  # the pick alert already covers the root cause; no second alert for it
         # After a shift lead expedites, the plan is the latest viable dispatch, not the normal cutoff.
         expedited = conn.execute(
@@ -127,6 +147,15 @@ def _detect(conn: sqlite3.Connection, now: datetime, cfg: MarketConfig) -> None:
                 f"Picked but not dispatched by {tu.local(dispatch_due, cfg.tz)}; "
                 f"last dispatch that keeps the promise is {tu.local(o['latest_dispatch_at'], cfg.tz)}.",
                 o["latest_dispatch_at"], now, cfg,
+            )
+        # Same for a dispatch alert closed as a false alarm: no dispatch by the last viable time means
+        # the promise is at risk, and someone has to decide what the customer is told.
+        if read_until >= tu.parse(o["latest_dispatch_at"]) and _dismissed(conn, o["id"], "MISSING_DISPATCH"):
+            _create_exception(
+                conn, o, "DISPATCH_STILL_MISSING",
+                f"Closed as a false alarm, but still not dispatched by {tu.local(o['latest_dispatch_at'], cfg.tz)}; "
+                f"the promise of {tu.local(o['promised_at'], cfg.tz)} is at risk.",
+                o["promised_at"], now, cfg,
             )
 
 

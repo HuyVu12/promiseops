@@ -32,7 +32,7 @@ PAGE_LEFT, PAGE_RIGHT = 284, 1408  # the content column at a 1440 px viewport
 # The same notes the README and the video script use.
 NOTES = {
     "esc": "Not picked: picker on break. Need a priority pick to make the 10:00 route.",
-    "exp": "Moved a picker from aisle 3; priority pick, loaded on the 10:30 shuttle (last viable 11:30).",
+    "exp": "Moved a picker from aisle 3; priority pick, loaded on the 10:15 shuttle (last viable 11:30).",
     "cost": "10",
     "fa": "Picker Jonas: tote packed 09:20, handheld was offline. Scanner ticket raised.",
     "cs": "No vehicle until 11:50. Customer service called the site manager with a 14:35 ETA.",

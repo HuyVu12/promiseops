@@ -92,23 +92,39 @@ def _feed(conn: sqlite3.Connection, order_id: str, type_: str, occurred: str | N
     )
 
 
+SOURCES = [
+    (ORDER_SOURCE, "Order management system (existing)", "orders"),
+    (FULFILMENT_SOURCE, "Warehouse fulfilment status (existing)", "fulfilment"),
+]
+
+
+def init_empty(conn: sqlite3.Connection) -> None:
+    """Pilot mode: the same schema and source registry, no scenario and no simulated clock."""
+    db.reset(conn)
+    conn.executemany("INSERT INTO sources(id, name, kind) VALUES (?, ?, ?)", SOURCES)
+    db.set_meta(conn, "schema_version", db.SCHEMA_VERSION)
+    db.set_meta(conn, "mode", "pilot")
+    conn.commit()
+
+
 def seed(conn: sqlite3.Connection) -> None:
     db.reset(conn)
     start = tu.local_dt(DAY, START, TZ)
-    conn.executemany(
-        "INSERT INTO sources(id, name, kind) VALUES (?, ?, ?)",
-        [
-            (ORDER_SOURCE, "Order management system (existing)", "orders"),
-            (FULFILMENT_SOURCE, "Warehouse fulfilment status (existing)", "fulfilment"),
-        ],
-    )
+    conn.executemany("INSERT INTO sources(id, name, kind) VALUES (?, ?, ?)", SOURCES)
     db.set_meta(conn, simulation.CLOCK_KEY, tu.iso(start))
     db.set_meta(conn, "schema_version", db.SCHEMA_VERSION)
+    db.set_meta(conn, "mode", "demo")
 
     for oid, store, ctype, route, _ in NORMAL:
         ingest.ingest_order(conn, _order(oid, store, ctype, route), start)
     for oid, store, ctype, route in SPECIAL:
         ingest.ingest_order(conn, _order(oid, store, ctype, route), start)
+
+    # Real feeds are not clean. The OMS re-sends SE-1042 with a later promise: logged as a duplicate,
+    # and the original 14:00 promise is kept. Shown on Data health; coverage is unchanged.
+    resent = _order("SE-1042", 3, "B2B", "A")
+    resent["promised_at"] = _t("16:00")
+    ingest.ingest_order(conn, resent, start)
 
     for oid, _, _, _, (pick, dispatch, delivered) in NORMAL:
         _feed(conn, oid, "PICK_CONFIRMED", pick)
@@ -139,6 +155,9 @@ def seed(conn: sqlite3.Connection) -> None:
     _feed(conn, "SE-1077", "DELIVERED", "14:35", branch="not_expedited")
     _feed(conn, "SE-1077", "DISPATCHED", None, branch="expedited", offset=30)
     _feed(conn, "SE-1077", "DELIVERED", None, branch="expedited", offset=170)
+
+    # The WMS sends one record with an event type PromiseOps does not know: rejected and logged at 09:05.
+    _feed(conn, "SE-1031", "PICKED", "09:05")
 
     engine.audit(conn, None, start, "Demo control", "SEEDED", f"Fictional scenario loaded for {DAY}")
     conn.commit()

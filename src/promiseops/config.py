@@ -54,6 +54,10 @@ EVENT_TYPES = ("PICK_CONFIRMED", "DISPATCHED", "DELIVERED")
 EXCEPTION_TYPES = {
     "MISSING_PICK": "Pick not confirmed",
     "MISSING_DISPATCH": "Dispatch not confirmed",
+    # Follow-ups: an alert closed as a false alarm must never silence the order. If the awaited event
+    # is still missing at the next control, the case comes back.
+    "PICK_STILL_MISSING": "Pick still missing after a false alarm",
+    "DISPATCH_STILL_MISSING": "Dispatch still missing after a false alarm",
 }
 
 RESOLUTIONS = {

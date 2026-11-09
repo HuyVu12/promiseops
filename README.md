@@ -63,6 +63,7 @@ Rules taken straight from the proposal:
 - A missing event only counts if the source was read after the milestone; until then the control is shown as unknown.
 - When the fulfilment feed is older than 30 minutes, alerts pause and a data-quality task opens.
 - An order past its promise without a delivery counts as late (overdue) immediately.
+- An alert closed as a false alarm never silences the order: if the pick is still missing when the route leaves, or the dispatch is still missing at the last viable time, the case comes back.
 - Nothing is written back to source systems.
 
 The interface is available in **English and Vietnamese**.
@@ -103,6 +104,18 @@ Open http://127.0.0.1:8000 for the landing page, or http://127.0.0.1:8000/app fo
 The database is created and seeded on first start in `var/promiseops.db` (rebuilt automatically if the schema changed).
 Set `PROMISEOPS_DB` to use another file, and `PROMISEOPS_API_KEY` to require an `X-API-Key` header on the JSON API.
 
+### Pilot mode
+
+`PROMISEOPS_MODE=pilot` runs the same engine on the wall clock instead of the demo clock:
+the database starts empty, OMS/WMS push records and heartbeats to the JSON API, a scheduler runs the rules every minute
+(so the 15-minute response timer and the stale-feed guard fire on their own), and the demo controls are switched off (`/sim/*` returns 404).
+Use a separate `PROMISEOPS_DB` for it; switching mode rebuilds the database.
+
+```powershell
+$env:PROMISEOPS_MODE = "pilot"; $env:PROMISEOPS_DB = "$env:TEMP\pilot.db"; $env:PROMISEOPS_API_KEY = "change-me"
+python -m uvicorn --app-dir src promiseops.web.app:app --port 8001
+```
+
 ## Demo walkthrough
 
 The yellow bar at the bottom of the tool is a **demo harness only**: it replaces real feeds and wall-clock time.
@@ -128,6 +141,7 @@ promiseops/
 ├── src/promiseops/
 │   ├── config.py              market settings, roles, outcomes, Round 1 targets and assumptions
 │   ├── timeutil.py            UTC storage, local display
+│   ├── clock.py               demo clock or wall clock (PROMISEOPS_MODE=pilot)
 │   ├── core/
 │   │   ├── engine.py          exception rules, freshness guard, escalation
 │   │   ├── workflow.py        take ownership, escalate, resolve; role checks; evidence and cost; audit
@@ -201,7 +215,7 @@ The two-page system diagram (C4 context, then container and components) is built
 | Measurement | Overdue orders count as late; percentages from fewer than 10 cases are not judged | Silence must never look like success; small samples must not look like proof |
 | Demo clock | Polls on a fixed 5-minute grid; each human action takes 1 simulated minute | Feeds behave like a real adapter; the audit log and response-time KPI read like a real shift |
 | Time | Stored in UTC, shown in Europe/Stockholm | Correct across daylight-saving changes |
-| Visual direction | Timetable layout with an orienteering course overlay | Chosen by the team from rolled design directions; see `PRODUCT.md` |
+| Visual direction | Timetable layout with an orienteering course overlay | Chosen by the team from several UI prototypes; see `PRODUCT.md` |
 
 ## Tests
 
@@ -211,10 +225,10 @@ python -m playwright install chromium
 python -m pytest
 ```
 
-38 tests:
+44 tests:
 
-- `tests/unit` - rules, escalation, auto-clear, escalation counts as work, one exception per cause, immutable promise, idempotent ingestion, stale-feed guard, unknown controls, poll grid, overdue counting, cost logging, scorecard, value.
-- `tests/web` - every page renders, HTTP actions and role checks, one simulated minute per action, API validation and API key, labelled outcomes, 404 page, open-redirect guard, Vietnamese rendering, and checks that every template string and user-facing error has a Vietnamese translation.
+- `tests/unit` - rules, escalation, auto-clear, escalation counts as work, one exception per cause, immutable promise, false alarms that turn out wrong come back, idempotent ingestion, stale-feed guard, unknown controls, poll grid, overdue counting, cost logging, scorecard, value.
+- `tests/web` - every page renders, HTTP actions and role checks, one simulated minute per action, API validation and API key, source heartbeat, pilot mode on the wall clock without demo controls, labelled outcomes, 404 page, open-redirect guard, Vietnamese rendering, and checks that every template string and user-facing error has a Vietnamese translation.
 - `tests/e2e` - the SE-1042 journey in a real browser, with no console errors allowed.
 
 ## Scripts and documents
@@ -233,7 +247,6 @@ python -m uvicorn --app-dir src promiseops.web.app:app --port 8766
 | `scripts/build_system_diagram.py [out.pdf]` | `docs/System Diagram.pdf` (2 pages) |
 | `scripts/build_video_assets.py` | Video slides and `MVP.srt` from `docs/video/video-script.md` |
 | `scripts/record_demo.py <en or vi> [base-url]` | Annotated walkthrough videos and posters for the landing page |
-| `scripts/fill_ai_journal.py <template.docx> <out.docx>` | The challenge's AI Journal, filled (export to PDF from Word) |
 
 ## JSON API
 
@@ -243,15 +256,23 @@ When `PROMISEOPS_API_KEY` is set, every endpoint except `/api/health` requires t
 |---|---|---|
 | POST | `/api/orders` | Receive an order with its promise and milestones; a re-sent order never changes the promise |
 | POST | `/api/events` | Receive a fulfilment event; idempotent on `source` + `event_id`; triggers a rules cycle |
+| POST | `/api/sources/{id}/heartbeat` | A source that is alive but has nothing new says so, so a quiet feed is not mistaken for a stale one |
 | GET | `/api/exceptions` | Open exceptions in priority order |
 | GET | `/api/outcomes` | Labelled outcomes: one row per exception with how it ended and the order's result |
-| GET | `/api/health` | Clock, source freshness, authentication mode |
+| GET | `/api/health` | Mode (demo or pilot), clock, source freshness, authentication mode |
 
 ## Not in the MVP
 
 Route optimisation, automatic replenishment, automatic promise changes, write-back to core systems, multi-country rollout, customer messaging, company SSO and a delay-prediction model are out of scope by design.
 "Handed to customer service" is recorded as an outcome, not sent.
 The late-risk model and an AI summary of case notes remain options after Gate 2, as proposed in Round 1; `/api/outcomes` already provides the labelled data.
+
+Known limits we would close in the pilot build:
+
+- An event that arrives before its order is rejected and logged, not retried; the pilot adds a retry queue.
+- A case escalated to the shift lead has no second-level timer; the pilot adds escalation to the operations manager.
+- Roles come from a demo switch, not from company SSO with role and site access.
+- SQLite and one process; PostgreSQL and a separate scheduler worker are the production step.
 
 ## Team and AI use
 
