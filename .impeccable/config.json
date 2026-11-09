@@ -1,0 +1,62 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/assigned.html"
+        ],
+        "createdAt": "2026-11-09T04:51:52.521Z",
+        "reason": "agent decision: throwaway decision-page sketches under .impeccable/mocks, rendered as skeletons, never shipped"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/model-pick.html"
+        ],
+        "createdAt": "2026-11-09T04:51:52.956Z",
+        "reason": "agent decision: throwaway decision-page sketches under .impeccable/mocks, rendered as skeletons, never shipped"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/challenger-orienteering.html"
+        ],
+        "createdAt": "2026-11-09T04:51:53.499Z",
+        "reason": "agent decision: throwaway decision-page sketches under .impeccable/mocks, rendered as skeletons, never shipped"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/assigned.html"
+        ],
+        "createdAt": "2026-11-09T04:51:53.962Z",
+        "reason": "agent decision: throwaway decision-page sketches under .impeccable/mocks, rendered as skeletons, never shipped"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/model-pick.html"
+        ],
+        "createdAt": "2026-11-09T04:51:54.472Z",
+        "reason": "agent decision: throwaway decision-page sketches under .impeccable/mocks, rendered as skeletons, never shipped"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/static/app.css"
+        ],
+        "createdAt": "2026-11-09T05:22:57.443Z",
+        "reason": "agent decision: the repeating gradient is the timetable's 15-minute grid, the functional armature named in the direction contract"
+      }
+    ]
+  }
+}

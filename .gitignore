@@ -5,3 +5,7 @@ data/
 *.db
 .venv/
 .env
+.taste-skill/
+.impeccable/questions/
+.impeccable/mocks/
+.impeccable/review/

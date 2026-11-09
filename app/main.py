@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from . import db, engine, ingest, kpi, seed, simulation, workflow
+from . import db, engine, i18n, ingest, kpi, seed, simulation, timetable, workflow
 from . import timeutil as tu
 from .config import EXCEPTION_TYPES, FULFILMENT_SOURCE, MARKETS, RESOLUTION_ROLES, RESOLUTIONS, ROLES
 
@@ -84,6 +84,20 @@ def _freshness(conn: sqlite3.Connection, now) -> list[dict]:
     return out
 
 
+def _lang(request: Request) -> str:
+    return i18n.pick(request.query_params.get("lang") or request.cookies.get("lang"))
+
+
+def _page(request: Request, template: str, ctx: dict) -> HTMLResponse:
+    """Render with the reader's language; a ?lang= choice is remembered in a cookie."""
+    lang = _lang(request)
+    tr = lambda text, **kw: i18n.translate(text, lang, **kw)  # noqa: E731
+    resp = templates.TemplateResponse(request, template, {**ctx, "_": tr, "lang": lang, "LANGS": i18n.LANGS})
+    if request.query_params.get("lang") == lang:
+        resp.set_cookie("lang", lang, httponly=True, samesite="lax", max_age=365 * 24 * 3600)
+    return resp
+
+
 def render(request: Request, conn: sqlite3.Connection, template: str, active: str, **ctx) -> HTMLResponse:
     now = simulation.now(conn)
     role = get_role(request)
@@ -99,7 +113,8 @@ def render(request: Request, conn: sqlite3.Connection, template: str, active: st
             "SELECT * FROM data_tasks WHERE source = ? AND closed_at IS NULL", (FULFILMENT_SOURCE,)
         ).fetchone(),
     }
-    return templates.TemplateResponse(request, template, {**base, **ctx})
+    base["day"] = i18n.day_label(now, CFG.tz, _lang(request))
+    return _page(request, template, {**base, **ctx})
 
 
 def _queue_rows(conn: sqlite3.Connection, now, where: str, params: tuple = ()) -> list[dict]:
@@ -117,9 +132,27 @@ def _queue_rows(conn: sqlite3.Connection, now, where: str, params: tuple = ()) -
     return out
 
 
+def _board(conn: sqlite3.Connection, now) -> tuple[timetable.Axis, dict]:
+    orders = conn.execute("SELECT * FROM orders").fetchall()
+    axis = timetable.build_axis(orders, now, CFG.tz)
+    escalated = {
+        r["order_id"] for r in conn.execute("SELECT order_id FROM exceptions WHERE status != 'RESOLVED' AND escalated = 1")
+    }
+    courses = {
+        o["id"]: timetable.course(o, timetable.events_by_type(conn, o["id"]), now, axis, o["id"] in escalated)
+        for o in orders
+    }
+    return axis, courses
+
+
 # ---------- Pages ----------
 
 @app.get("/", response_class=HTMLResponse)
+def landing(request: Request):
+    return _page(request, "landing.html", {})
+
+
+@app.get("/app", response_class=HTMLResponse)
 def queue(request: Request, view: str = "all", conn: sqlite3.Connection = Depends(get_conn)):
     now = simulation.now(conn)
     role = get_role(request)
@@ -132,7 +165,16 @@ def queue(request: Request, view: str = "all", conn: sqlite3.Connection = Depend
         "SELECT x.*, o.store FROM exceptions x JOIN orders o ON o.id = x.order_id "
         "WHERE x.status = 'RESOLVED' ORDER BY x.resolved_at DESC LIMIT 6"
     ).fetchall()
-    return render(request, conn, "queue.html", "queue", rows=rows, recent=recent, view=view)
+    axis, courses = _board(conn, now)
+    open_ids = {r["order_id"] for r in _queue_rows(conn, now, "x.status != 'RESOLVED'")}
+    others = conn.execute("SELECT * FROM orders ORDER BY dispatch_cutoff_at, id").fetchall()
+    on_course = [o for o in others if o["id"] not in open_ids]
+    # Still running first (next control soonest), delivered orders last.
+    on_course.sort(key=lambda o: (courses[o["id"]]["delivered"] is not None, (courses[o["id"]]["next"] or {}).get("due", "")))
+    return render(
+        request, conn, "queue.html", "queue", rows=rows, recent=recent, view=view,
+        axis=axis, courses=courses, on_course=on_course, now_pct=axis.pct(now),
+    )
 
 
 @app.get("/exceptions/{exception_id}", response_class=HTMLResponse)
@@ -158,8 +200,12 @@ def exception_detail(request: Request, exception_id: int, conn: sqlite3.Connecti
         ("Promised delivery", order["promised_at"], "DELIVERED"),
     ]
     done = {e["type"]: e["occurred_at"] for e in events}
+    axis = timetable.build_axis([order], now, CFG.tz)
+    crs = timetable.course(order, timetable.events_by_type(conn, order["id"]), now, axis,
+                           escalated=bool(x["escalated"]) and x["status"] != "RESOLVED")
     return render(
         request, conn, "exception.html", "queue", x=x, order=order, events=events, log=log, others=others,
+        axis=axis, crs=crs, now_pct=axis.pct(now),
         remaining=tu.minutes_between(now, tu.parse(x["intervention_deadline"])),
         ack_left=tu.minutes_between(now, tu.parse(x["ack_due_at"])),
         allowed=allowed, milestones=milestones, done=done,
@@ -184,12 +230,29 @@ def orders(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
                 xid, xtype, xstatus = item.split(":")
                 excs.append({"id": int(xid), "type": xtype, "status": xstatus})
         parsed.append({**dict(r), "excs": excs})
-    return render(request, conn, "orders.html", "orders", rows=parsed)
+    axis, courses = _board(conn, simulation.now(conn))
+    return render(request, conn, "orders.html", "orders", rows=parsed, axis=axis, courses=courses,
+                  now_pct=axis.pct(simulation.now(conn)))
 
 
 @app.get("/kpi", response_class=HTMLResponse)
 def kpi_page(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
-    return render(request, conn, "kpi.html", "kpi", k=kpi.compute(conn, simulation.now(conn)))
+    k = kpi.compute(conn, simulation.now(conn))
+    margins = []
+    for o in conn.execute(
+        "SELECT o.id, o.customer_type, o.promised_at, MIN(e.occurred_at) AS delivered_at FROM orders o "
+        "JOIN events e ON e.order_id = o.id AND e.type = 'DELIVERED' GROUP BY o.id"
+    ):
+        margins.append({
+            "id": o["id"], "type": o["customer_type"],
+            "min": tu.minutes_between(tu.parse(o["delivered_at"]), tu.parse(o["promised_at"])),
+        })
+    lo = min([-60] + [m["min"] for m in margins])
+    hi = max([120] + [m["min"] for m in margins])
+    for m in margins:
+        m["pct"] = round((m["min"] - lo) / (hi - lo) * 100, 2)
+    zero_pct = round((0 - lo) / (hi - lo) * 100, 2)
+    return render(request, conn, "kpi.html", "kpi", k=k, margins=margins, zero_pct=zero_pct, lo=lo, hi=hi)
 
 
 @app.get("/data", response_class=HTMLResponse)
@@ -247,10 +310,10 @@ def resolve(
 
 
 @app.post("/role")
-def set_role(role: str = Form(...), next: str = Form("/")):
+def set_role(role: str = Form(...), next: str = Form("/app")):
     if role not in ROLES:
         raise HTTPException(400, "Unknown role")
-    target = next if next.startswith("/") and not next.startswith("//") else "/"
+    target = next if next.startswith("/") and not next.startswith("//") else "/app"
     resp = RedirectResponse(target.split("?")[0], status_code=303)
     resp.set_cookie("role", role, httponly=True, samesite="lax")
     return resp
@@ -259,11 +322,11 @@ def set_role(role: str = Form(...), next: str = Form("/")):
 # ---------- Demo controls (simulation only) ----------
 
 def _safe_next(next: str) -> str:
-    return next.split("?")[0] if next.startswith("/") and not next.startswith("//") else "/"
+    return next.split("?")[0] if next.startswith("/") and not next.startswith("//") else "/app"
 
 
 @app.post("/sim/advance")
-def sim_advance(minutes: int = Form(...), next: str = Form("/"), conn: sqlite3.Connection = Depends(get_conn)):
+def sim_advance(minutes: int = Form(...), next: str = Form("/app"), conn: sqlite3.Connection = Depends(get_conn)):
     try:
         t = simulation.advance(conn, minutes)
     except ValueError as exc:
@@ -272,7 +335,7 @@ def sim_advance(minutes: int = Form(...), next: str = Form("/"), conn: sqlite3.C
 
 
 @app.post("/sim/feed")
-def sim_feed(action: str = Form(...), next: str = Form("/"), conn: sqlite3.Connection = Depends(get_conn)):
+def sim_feed(action: str = Form(...), next: str = Form("/app"), conn: sqlite3.Connection = Depends(get_conn)):
     simulation.set_paused(conn, FULFILMENT_SOURCE, action == "pause")
     return back(_safe_next(next), msg="Fulfilment feed paused" if action == "pause" else "Fulfilment feed resumed")
 
@@ -280,7 +343,7 @@ def sim_feed(action: str = Form(...), next: str = Form("/"), conn: sqlite3.Conne
 @app.post("/sim/reset")
 def sim_reset(conn: sqlite3.Connection = Depends(get_conn)):
     seed.seed(conn)
-    return back("/", msg="Scenario reset to 09:00")
+    return back("/app", msg="Scenario reset to 09:00")
 
 
 # ---------- JSON API for source integrations ----------

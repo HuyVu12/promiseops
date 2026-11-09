@@ -1,46 +1,43 @@
 {% extends "base.html" %}
-{% block title %}Orders{% endblock %}
+{% from "_course.html" import axis_lane, course_lane, legend with context %}
+{% block title %}{{ _('Orders') }}{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
-    <h1>Orders in scope</h1>
-    <p class="lede">{{ rows | length }} home deliveries with a timed promise, across 12 stores. Read-only view of source data.</p>
+    <h1>{{ _('Orders in scope') }}</h1>
+    <p class="lede">{{ _('{n} home deliveries with a timed promise across 12 stores, each drawn as its course. Read-only view of source data.', n=rows | length) }}</p>
   </div>
 </div>
-<div class="table-wrap">
-<table class="grid" data-testid="orders">
-  <thead>
-    <tr>
-      <th>Order</th><th>Store</th><th>Type</th>
-      <th class="num">Pick due</th><th class="num">Picked</th>
-      <th class="num">Cutoff</th><th class="num">Dispatched</th>
-      <th class="num">Promise</th><th class="num">Delivered</th>
-      <th>Exceptions</th>
-    </tr>
-  </thead>
-  <tbody>
+
+<div class="board" data-testid="orders">
+  <div class="trow thead">
+    <div class="cell">{{ _('Delivery') }}</div>
+    <div class="cell">{{ _('Order') }}</div>
+    <div class="lane-cell">{{ axis_lane(axis, now_pct, now) }}</div>
+    <div class="cell">{{ _('Exceptions') }}</div>
+  </div>
+  <div class="tbody">
   {% for r in rows %}
-    {% set late = r.delivered_at and r.delivered_at > r.promised_at %}
-    <tr data-testid="order-{{ r.id }}">
-      <td class="strong">{{ r.id }}</td>
-      <td>{{ r.store }}</td>
-      <td><span class="tag {{ r.customer_type | lower }}">{{ r.customer_type }}</span></td>
-      <td class="num muted">{{ r.pick_due_at | local }}</td>
-      <td class="num {{ 'bad-text' if r.picked_at and r.picked_at > r.pick_due_at }}">{{ r.picked_at | local }}</td>
-      <td class="num muted">{{ r.dispatch_cutoff_at | local }}</td>
-      <td class="num {{ 'bad-text' if r.dispatched_at and r.dispatched_at > r.dispatch_cutoff_at }}">{{ r.dispatched_at | local }}</td>
-      <td class="num muted">{{ r.promised_at | local }}</td>
-      <td class="num">
-        {% if r.delivered_at %}<span class="outcome {{ 'late' if late else 'ontime' }}">{{ r.delivered_at | local }} {{ 'late' if late else 'on time' }}</span>{% else %}-{% endif %}
-      </td>
-      <td>
+    {% set c = courses[r.id] %}
+    <div class="trow" data-testid="order-{{ r.id }}">
+      <div class="cell">
+        {% if c.outcome %}
+          <span class="outcome {{ 'ontime' if c.outcome == 'on time' else 'late' }}">{{ c.delivered }} {{ _(c.outcome) }}</span>
+        {% else %}
+          <span class="muted">{{ _('en route') if r.dispatched_at else '-' }}</span>
+        {% endif %}
+        <span class="sub">{{ _('Promise') }} {{ r.promised_at | local }}</span>
+      </div>
+      <div class="cell"><span><span class="order-link">{{ r.id }}</span> <span class="tag {{ r.customer_type | lower }}">{{ r.customer_type }}</span></span><span class="sub">{{ r.store }}</span></div>
+      <div class="lane-cell">{{ course_lane(c, axis, now_pct, show_missed=False) }}</div>
+      <div class="cell">
         {% for e in r.excs %}
-          <a href="/exceptions/{{ e.id }}" class="tag {{ 'esc' if e.status != 'RESOLVED' else 'done' }}">{{ EXCEPTION_TYPES[e.type] }}</a>
+          <a href="/exceptions/{{ e.id }}" class="tag {{ 'esc' if e.status != 'RESOLVED' else 'done' }}">{{ _(EXCEPTION_TYPES[e.type]) }}</a>
         {% endfor %}
-      </td>
-    </tr>
+      </div>
+    </div>
   {% endfor %}
-  </tbody>
-</table>
+  </div>
 </div>
+{{ legend() }}
 {% endblock %}

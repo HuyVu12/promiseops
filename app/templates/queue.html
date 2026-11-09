@@ -1,85 +1,95 @@
 {% extends "base.html" %}
-{% block title %}Exception queue{% endblock %}
+{% from "_course.html" import axis_lane, course_lane, legend with context %}
+{% block title %}{{ _('Exception queue') }}{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
-    <h1>Exception queue</h1>
-    <p class="lede">Orders that may miss their original delivery promise, ordered by time left to intervene.</p>
+    <h1>{{ _('Exception queue') }}</h1>
+    <p class="lede">{{ _('Every order is a course of four controls on one timetable. The red line is now; a control it has passed without confirmation needs action.') }}</p>
   </div>
   <div class="tabs" role="tablist">
-    <a href="/?view=all" class="{{ 'on' if view == 'all' }}" data-testid="view-all">All open <span>{{ open_count }}</span></a>
-    <a href="/?view=mine" class="{{ 'on' if view == 'mine' }}" data-testid="view-mine">Assigned to me <span>{{ mine }}</span></a>
+    <a href="/app?view=all" class="{{ 'on' if view == 'all' }}" data-testid="view-all">{{ _('All open') }} <span>{{ open_count }}</span></a>
+    <a href="/app?view=mine" class="{{ 'on' if view == 'mine' }}" data-testid="view-mine">{{ _('Assigned to me') }} <span>{{ mine }}</span></a>
   </div>
 </div>
 
-{% if rows %}
-<div class="table-wrap">
-<table class="grid queue" data-testid="queue">
-  <thead>
-    <tr>
-      <th>Time left to act</th>
-      <th>Order</th>
-      <th>Issue</th>
-      <th>Owner</th>
-      <th>Status</th>
-      <th class="num">Promise</th>
-    </tr>
-  </thead>
-  <tbody>
+<div class="board" data-testid="queue">
+  <div class="trow thead">
+    <div class="cell">{{ _('Time left') }}</div>
+    <div class="cell">{{ _('Order') }}</div>
+    <div class="lane-cell">{{ axis_lane(axis, now_pct, now) }}</div>
+    <div class="cell">{{ _('Owner and status') }}</div>
+  </div>
+
+  <div class="band-head">{{ _('Open exceptions') }} <span>{{ rows | length }} · {{ _('least time left first') }}</span></div>
+  <div class="tbody">
   {% for r in rows %}
-    <tr class="{{ 'late' if r.remaining < 0 else ('urgent' if r.remaining <= 30 else '') }}" data-testid="row-{{ r.order_id }}">
-      <td>
-        <span class="countdown">{% if r.remaining < 0 %}Passed {{ (-r.remaining) | mins }} ago{% elif r.remaining == 0 %}Due now{% else %}{{ r.remaining | mins }} left{% endif %}</span>
-        <span class="sub">act by {{ r.intervention_deadline | local }}</span>
-      </td>
-      <td>
-        <a href="/exceptions/{{ r.id }}" class="order-link">{{ r.order_id }}</a>
-        <span class="sub">{{ r.store }} &middot; <span class="tag {{ r.customer_type | lower }}">{{ r.customer_type }}</span></span>
-      </td>
-      <td>{{ EXCEPTION_TYPES[r.type] }}<span class="sub">{{ r.reason }}</span></td>
-      <td>
-        {{ r.owner }}{% if r.escalated %} <span class="tag esc">Escalated</span>{% endif %}
-        <span class="sub">{{ ROLES[r.owner_role] }}</span>
-      </td>
-      <td>
+    {% set c = courses[r.order_id] %}
+    {% set urg = 'late' if r.remaining < 0 else ('urgent' if r.remaining <= 30 else '') %}
+    <div class="trow {{ urg }}" data-testid="row-{{ r.order_id }}">
+      <div class="cell">
+        <span class="left-time {{ urg }}">{% if r.remaining < 0 %}{{ _('Passed {t} ago', t=(-r.remaining) | mins) }}{% elif r.remaining == 0 %}{{ _('Due now') }}{% else %}{{ _('{t} left', t=r.remaining | mins) }}{% endif %}</span>
+        <span class="sub">{{ _('act by {t}', t=r.intervention_deadline | local) }}</span>
+      </div>
+      <div class="cell">
+        <span><a href="/exceptions/{{ r.id }}" class="order-link">{{ r.order_id }}</a> <span class="tag {{ r.customer_type | lower }}">{{ r.customer_type }}</span></span>
+        <span class="sub">{{ r.store }} · {{ _(EXCEPTION_TYPES[r.type]) }}</span>
+      </div>
+      <div class="lane-cell">{{ course_lane(c, axis, now_pct) }}</div>
+      <div class="cell">
+        <span>{{ r.owner }}{% if r.escalated %} <span class="tag esc">{{ _('Escalated') }}</span>{% endif %}</span>
         {% if r.status == 'OPEN' %}
-          <span class="status open">Waiting for owner</span>
-          <span class="sub {{ 'bad-text' if r.ack_left <= 0 }}">{% if r.ack_left < 0 %}response overdue{% elif r.ack_left == 0 %}respond now{% else %}respond within {{ r.ack_left }} min{% endif %}</span>
+          <span class="sub"><span class="status open">{{ _('Waiting for owner') }}</span> · <span class="{{ 'bad-text' if r.ack_left <= 0 }}">{% if r.ack_left < 0 %}{{ _('response overdue') }}{% elif r.ack_left == 0 %}{{ _('respond now') }}{% else %}{{ _('respond within {n} min', n=r.ack_left) }}{% endif %}</span></span>
         {% else %}
-          <span class="status ack">In progress</span>
-          <span class="sub">since {{ r.acknowledged_at | local }}</span>
+          <span class="sub"><span class="status ack">{{ _('In progress') }}</span> · {{ _('since {t}', t=r.acknowledged_at | local) }}</span>
         {% endif %}
-      </td>
-      <td class="num">{{ r.promised_at | local }}</td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
-</div>
-{% else %}
-<div class="empty" data-testid="queue-empty">
-  {% if stale_task %}
-  <h2>No new alerts while fulfilment data is stale</h2>
-  <p>Silence from a stale feed proves nothing. Follow the standard floor process until data recovers.</p>
+      </div>
+    </div>
   {% else %}
-  <h2>No open exceptions{% if view == 'mine' %} assigned to you{% endif %}</h2>
-  <p>Every order with a passed milestone has a confirmed event or a recorded outcome.</p>
+    <div class="empty" data-testid="queue-empty">
+      {% if stale_task %}
+      <h2>{{ _('No new alerts while fulfilment data is stale') }}</h2>
+      <p>{{ _('Silence from a stale feed proves nothing. Follow the standard floor process until data recovers.') }}</p>
+      {% else %}
+      <h2>{{ _('No open exceptions') }}{% if view == 'mine' %} ({{ _('assigned to you') }}){% endif %}</h2>
+      <p>{{ _('Every order with a passed milestone has a confirmed event or a recorded outcome.') }}</p>
+      {% endif %}
+    </div>
+  {% endfor %}
+  </div>
+
+  {% if view == 'all' %}
+  <div class="band-head">{{ _('On course') }} <span>{{ on_course | length }} · {{ _('orders with every passed control confirmed') }}</span></div>
+  <div class="tbody quiet">
+  {% for o in on_course %}
+    {% set c = courses[o.id] %}
+    <div class="trow" data-testid="course-{{ o.id }}">
+      <div class="cell">
+        {% if c.delivered %}<span class="left-time calm">{{ _('Delivered') }}</span>
+        {% elif c.next %}<span class="left-time calm">{{ _('next: {label} {t}', label=_(c.next.label), t=c.next.time) }}</span>{% endif %}
+      </div>
+      <div class="cell"><span><span class="order-link">{{ o.id }}</span> <span class="tag {{ o.customer_type | lower }}">{{ o.customer_type }}</span></span><span class="sub">{{ o.store }}</span></div>
+      <div class="lane-cell">{{ course_lane(c, axis, now_pct, show_missed=False) }}</div>
+      <div class="cell"><span class="sub">{% if c.outcome %}<span class="outcome {{ 'ontime' if c.outcome == 'on time' else 'late' }}">{{ _(c.outcome) }}</span>{% endif %}</span></div>
+    </div>
+  {% endfor %}
+  </div>
   {% endif %}
 </div>
-{% endif %}
+{{ legend() }}
 
 {% if recent %}
-<h2 class="section">Recently closed</h2>
+<h2 class="section">{{ _('Recently closed') }}</h2>
 <div class="table-wrap">
-<table class="grid compact" data-testid="recent">
-  <thead><tr><th>Order</th><th>Issue</th><th>Outcome</th><th>By</th><th class="num">Closed</th></tr></thead>
+<table class="grid" data-testid="recent">
+  <thead><tr><th>{{ _('Order') }}</th><th>{{ _('Issue') }}</th><th>{{ _('Outcome') }}</th><th>{{ _('By') }}</th><th class="num">{{ _('Closed') }}</th></tr></thead>
   <tbody>
   {% for r in recent %}
     <tr>
       <td><a href="/exceptions/{{ r.id }}">{{ r.order_id }}</a></td>
-      <td>{{ EXCEPTION_TYPES[r.type] }}</td>
-      <td><span class="outcome {{ r.resolution | lower }}">{{ RESOLUTIONS[r.resolution] }}</span></td>
-      <td>{{ 'System' if r.resolution == 'AUTO_CLEARED' else r.owner }}</td>
+      <td>{{ _(EXCEPTION_TYPES[r.type]) }}</td>
+      <td><span class="outcome {{ r.resolution | lower }}">{{ _(RESOLUTIONS[r.resolution]) }}</span></td>
+      <td>{{ _('System') if r.resolution == 'AUTO_CLEARED' else r.owner }}</td>
       <td class="num">{{ r.resolved_at | local }}</td>
     </tr>
   {% endfor %}

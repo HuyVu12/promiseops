@@ -1,0 +1,307 @@
+"""English / Vietnamese interface text.
+
+English strings are the keys, so templates read naturally and a missing translation falls back to
+English instead of breaking. System-generated sentences (alert reasons, audit notes, errors) are
+translated by pattern, so stored data stays in one language and is rendered in the reader's.
+Text typed by people is never translated.
+"""
+
+from __future__ import annotations
+
+import re
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+LANGS = {"en": "English", "vi": "Tiếng Việt"}
+DEFAULT = "en"
+
+VI: dict[str, str] = {
+    # Shell
+    "Exception queue": "Hàng đợi ngoại lệ",
+    "Orders": "Đơn hàng",
+    "Outcomes": "Kết quả",
+    "Data health": "Sức khỏe dữ liệu",
+    "Local time": "Giờ địa phương",
+    "Source feeds": "Nguồn dữ liệu",
+    "Signed in as": "Đăng nhập với vai trò",
+    "Language": "Ngôn ngữ",
+    "updated {n} min ago": "cập nhật {n} phút trước",
+    "no data": "không có dữ liệu",
+    "Order management": "Quản lý đơn hàng",
+    "Warehouse fulfilment": "Trạng thái kho",
+    "Alerts pause when fulfilment data is older than {n} min.": "Cảnh báo tạm dừng khi dữ liệu kho cũ hơn {n} phút.",
+    "Fulfilment data is stale.": "Dữ liệu kho đã cũ.",
+    "Owner": "Người phụ trách",
+    "Keep using the standard floor process until data recovers.": "Tiếp tục quy trình thường lệ tại kho cho đến khi dữ liệu phục hồi.",
+    "Demo controls": "Điều khiển demo",
+    "Simulation only: replaces real OMS/WMS feeds and wall-clock time.": "Chỉ để mô phỏng: thay cho nguồn OMS/WMS thật và giờ thực.",
+    "Simulate feed outage": "Giả lập mất nguồn",
+    "Resume fulfilment feed": "Khôi phục nguồn kho",
+    "Reset scenario": "Đặt lại kịch bản",
+    "Reset the scenario to 09:00?": "Đặt lại kịch bản về 09:00?",
+    "DC coordinator": "Điều phối viên DC",
+    "Shift lead": "Trưởng ca",
+    "Saved": "Đã lưu",
+    "Fulfilment feed paused": "Đã tạm dừng nguồn kho",
+    "Fulfilment feed resumed": "Đã khôi phục nguồn kho",
+    "Scenario reset to 09:00": "Đã đặt lại kịch bản về 09:00",
+    # Queue
+    "Every order is a course of four controls on one timetable. The red line is now; a control it has passed without confirmation needs action.":
+        "Mỗi đơn là một tuyến gồm bốn trạm trên cùng một lịch trình. Vạch đỏ là hiện tại; trạm nào vạch đã đi qua mà chưa được xác nhận thì cần xử lý.",
+    "All open": "Tất cả đang mở",
+    "Assigned to me": "Giao cho tôi",
+    "Time left": "Còn lại",
+    "Order": "Đơn",
+    "Course": "Tuyến",
+    "Owner and status": "Phụ trách và trạng thái",
+    "Due now": "Đến hạn",
+    "{t} left": "còn {t}",
+    "left": "còn",
+    "Passed {t} ago": "Quá hạn {t}",
+    "act by {t}": "xử lý trước {t}",
+    "Waiting for owner": "Chờ người nhận",
+    "In progress": "Đang xử lý",
+    "respond now": "phản hồi ngay",
+    "response overdue": "quá hạn phản hồi",
+    "respond within {n} min": "phản hồi trong {n} phút",
+    "since {t}": "từ {t}",
+    "Escalated": "Đã chuyển cấp",
+    "Open exceptions": "Ngoại lệ đang mở",
+    "least time left first": "ít thời gian nhất lên trước",
+    "On course": "Đúng tuyến",
+    "orders with every passed control confirmed": "các đơn đã xác nhận mọi trạm đã qua",
+    "Delivered": "Đã giao",
+    "on time": "đúng hạn",
+    "late": "trễ",
+    "next: {label} {t}": "tiếp theo: {label} {t}",
+    "Now": "Hiện tại",
+    "Promise course": "Tuyến cam kết",
+    "Confirmed": "Đã xác nhận",
+    "Confirmed late": "Xác nhận trễ",
+    "Missed": "Bị lỡ",
+    "Ahead": "Sắp tới",
+    "Escalated to shift lead": "Đã chuyển trưởng ca",
+    "No open exceptions": "Không có ngoại lệ đang mở",
+    "assigned to you": "giao cho bạn",
+    "Every order with a passed milestone has a confirmed event or a recorded outcome.": "Mọi đơn đã qua mốc đều có sự kiện xác nhận hoặc kết quả được ghi nhận.",
+    "No new alerts while fulfilment data is stale": "Không tạo cảnh báo mới khi dữ liệu kho đã cũ",
+    "Silence from a stale feed proves nothing. Follow the standard floor process until data recovers.": "Nguồn cũ im lặng không chứng minh điều gì. Theo quy trình thường lệ cho đến khi dữ liệu phục hồi.",
+    "Recently closed": "Vừa đóng",
+    "Issue": "Vấn đề",
+    "Outcome": "Kết quả",
+    "By": "Bởi",
+    "Closed": "Đóng lúc",
+    "System": "Hệ thống",
+    "Pick": "Lấy hàng",
+    "Cutoff": "Hạn xuất",
+    "Last viable": "Muộn nhất",
+    "Promise": "Cam kết",
+    # Exception types / outcomes / roles
+    "Pick not confirmed": "Chưa xác nhận lấy hàng",
+    "Dispatch not confirmed": "Chưa xác nhận xuất hàng",
+    "Verified on floor - alert was wrong": "Đã kiểm tra tại kho - cảnh báo sai",
+    "Expedited by shift lead": "Trưởng ca cho xử lý gấp",
+    "Promise at risk - handed to customer service": "Có nguy cơ trễ - chuyển chăm sóc khách hàng",
+    "Missing event arrived before anyone acted": "Sự kiện về trước khi có người xử lý",
+    # Detail
+    "Act before {t}": "Xử lý trước {t}",
+    "Intervention deadline {t}": "Hạn can thiệp {t}",
+    "Closed {t}": "Đóng lúc {t}",
+    "The course against the original promise": "Tuyến so với cam kết gốc",
+    "The promise of {t} is fixed when the order is placed. PromiseOps never redraws the course, so outcomes stay honest.":
+        "Cam kết {t} được cố định khi đặt hàng. PromiseOps không bao giờ vẽ lại tuyến, nên kết quả luôn trung thực.",
+    "planned {t}": "kế hoạch {t}",
+    "confirmed {t}": "xác nhận {t}",
+    "not confirmed": "chưa xác nhận",
+    "pending": "chưa tới",
+    "planning limit": "giới hạn kế hoạch",
+    "Source events received": "Sự kiện nhận từ nguồn",
+    "Event": "Sự kiện",
+    "Happened (source)": "Xảy ra (theo nguồn)",
+    "Received": "Nhận lúc",
+    "Source ref": "Mã nguồn",
+    "synced late": "đồng bộ trễ",
+    "No fulfilment events yet for this order.": "Chưa có sự kiện kho nào cho đơn này.",
+    "Activity log": "Nhật ký hoạt động",
+    "Customer": "Khách hàng",
+    "Store": "Cửa hàng",
+    "Response due": "Hạn phản hồi",
+    "overdue": "quá hạn",
+    "{n} min": "{n} phút",
+    "now": "ngay",
+    "Also on this order": "Cùng đơn này",
+    "Your action": "Thao tác của bạn",
+    "as {name}": "với tư cách {name}",
+    "Take ownership": "Nhận xử lý",
+    "Taking ownership stops the {n}-minute escalation timer.": "Nhận xử lý sẽ dừng bộ đếm chuyển cấp {n} phút.",
+    "What did you verify?": "Bạn đã kiểm tra được gì?",
+    "Shift lead decision": "Quyết định của trưởng ca",
+    "Evidence and reason": "Bằng chứng và lý do",
+    "Who you spoke to, what you saw, what happens next": "Bạn đã nói chuyện với ai, thấy gì, bước tiếp theo là gì",
+    "Record outcome": "Ghi nhận kết quả",
+    "Need a decision you cannot make?": "Cần quyết định vượt quyền của bạn?",
+    "What the shift lead needs to decide": "Điều trưởng ca cần quyết định",
+    "Escalate to {name}": "Chuyển cho {name}",
+    "Add a note": "Thêm ghi chú",
+    "e.g. Called picker, checking aisle 14": "VD: Đã gọi nhân viên lấy hàng, đang kiểm tra dãy 14",
+    "Add": "Thêm",
+    "Exception not found": "Không tìm thấy ngoại lệ",
+    "Pick confirmed": "Xác nhận lấy hàng",
+    "Dispatched": "Đã xuất hàng",
+    # Orders
+    "Orders in scope": "Đơn hàng trong phạm vi",
+    "{n} home deliveries with a timed promise across 12 stores, each drawn as its course. Read-only view of source data.":
+        "{n} đơn giao tận nhà có cam kết giờ, thuộc 12 cửa hàng, mỗi đơn vẽ thành một tuyến. Chỉ đọc từ dữ liệu nguồn.",
+    "Delivery": "Giao hàng",
+    "Exceptions": "Ngoại lệ",
+    "en route": "đang giao",
+    # Outcomes
+    "Outcomes against the original promise": "Kết quả so với cam kết gốc",
+    "Measured on delivered orders only, against the promise made at order time. Pilot metric definitions from the Round 1 proposal.":
+        "Chỉ tính trên đơn đã giao, so với cam kết lúc đặt hàng. Định nghĩa chỉ số theo đề xuất pilot ở Vòng 1.",
+    "Delivered on time": "Giao đúng hạn",
+    "{a} of {b} delivered": "{a} trên {b} đơn đã giao",
+    "{n} still en route": "{n} đơn đang giao",
+    "Flagged orders still on time": "Đơn có cảnh báo vẫn đúng hạn",
+    "{a} of {b} delivered orders that had an exception": "{a} trên {b} đơn đã giao từng có ngoại lệ",
+    "Median time to take ownership": "Thời gian nhận xử lý (trung vị)",
+    "Target: within {n} min": "Mục tiêu: trong {n} phút",
+    "{n} escalated": "{n} lần chuyển cấp",
+    "False alarms (worked alerts)": "Cảnh báo sai (đã xử lý)",
+    "Tunes the rules; high values mean alerts cost more than they save": "Dùng để chỉnh quy tắc; cao nghĩa là cảnh báo tốn công hơn lợi ích",
+    "Delivery margin against the original promise": "Độ lệch giao hàng so với cam kết gốc",
+    "Each mark is one delivered order: left of the purple line is late, right of it is early. Squares are B2B, circles B2C.":
+        "Mỗi điểm là một đơn đã giao: bên trái vạch tím là trễ, bên phải là sớm. Hình vuông là B2B, hình tròn là B2C.",
+    "late by": "trễ",
+    "early by": "sớm",
+    "Promise": "Cam kết",
+    "No delivered orders yet. Advance the clock to see outcomes.": "Chưa có đơn nào được giao. Tua đồng hồ để xem kết quả.",
+    "By segment": "Theo phân khúc",
+    "B2B and B2C are reported separately, as required for the pilot evaluation.": "B2B và B2C được báo cáo riêng, theo yêu cầu đánh giá pilot.",
+    "Segment": "Phân khúc",
+    "On time": "Đúng hạn",
+    "Late": "Trễ",
+    "On-time rate": "Tỷ lệ đúng hạn",
+    "All": "Tất cả",
+    "How exceptions ended": "Ngoại lệ kết thúc thế nào",
+    "{a} raised · {b} still open · {c} data-freshness incident(s)": "{a} đã tạo · {b} đang mở · {c} sự cố độ mới dữ liệu",
+    "Count": "Số lượng",
+    "This demo shows the measurement, not the result. The pilot compares 12 pilot stores against matched control stores before any business case number is claimed.":
+        "Bản demo này thể hiện cách đo, không phải kết quả. Pilot so sánh 12 cửa hàng thí điểm với các cửa hàng đối chứng trước khi khẳng định bất kỳ con số nào của business case.",
+    # Data health
+    "Alerts are only as good as the data. This page shows what the adapter accepted, rejected and when a feed went quiet.":
+        "Cảnh báo chỉ tốt bằng dữ liệu. Trang này cho thấy adapter đã nhận, từ chối gì và khi nào một nguồn im lặng.",
+    "Records accepted": "Bản ghi được nhận",
+    "Duplicates ignored": "Bản trùng bị bỏ qua",
+    "Re-sent records never create new work": "Bản ghi gửi lại không bao giờ tạo việc mới",
+    "Rejected": "Bị từ chối",
+    "Unknown order, bad timestamp, unknown type": "Đơn không tồn tại, sai dấu thời gian, sai loại",
+    "Data-quality tasks": "Việc chất lượng dữ liệu",
+    "Source": "Nguồn",
+    "Opened": "Mở lúc",
+    "Open": "Đang mở",
+    "Note": "Ghi chú",
+    "No freshness incidents. Both feeds are reporting inside the {n}-minute limit.": "Không có sự cố. Cả hai nguồn đều báo trong giới hạn {n} phút.",
+    "System log": "Nhật ký hệ thống",
+    "Latest adapter records": "Bản ghi adapter gần nhất",
+    "Time": "Thời gian",
+    "Record": "Bản ghi",
+    "Result": "Kết quả",
+    "accepted": "đã nhận",
+    "duplicate": "trùng",
+    "rejected": "từ chối",
+    # Audit actions
+    "created": "tạo",
+    "acknowledged": "nhận xử lý",
+    "escalated": "chuyển cấp",
+    "auto cleared": "tự đóng",
+    "event arrived": "sự kiện về",
+    "note": "ghi chú",
+    "false alarm": "cảnh báo sai",
+    "expedited": "xử lý gấp",
+    "customer notified": "báo khách hàng",
+    "data stale": "dữ liệu cũ",
+    "data recovered": "dữ liệu phục hồi",
+    "feed paused": "tạm dừng nguồn",
+    "feed resumed": "khôi phục nguồn",
+    "seeded": "nạp dữ liệu",
+    # Errors from the workflow
+    "Only open exceptions can be acknowledged": "Chỉ nhận xử lý được ngoại lệ đang mở",
+    "Exception is already resolved": "Ngoại lệ đã được xử lý",
+    "Already with the shift lead": "Đã ở chỗ trưởng ca",
+    "Say what the shift lead needs to decide": "Hãy ghi điều trưởng ca cần quyết định",
+    "Note is empty": "Ghi chú đang trống",
+    "Unknown outcome": "Kết quả không hợp lệ",
+    "Record what you verified and why": "Hãy ghi bạn đã kiểm tra gì và vì sao",
+}
+
+# Sentence patterns produced by the system (engine, workflow, simulation).
+PATTERNS: list[tuple[re.Pattern, str]] = [
+    (re.compile(r"^No pick confirmation by (\S+); route dispatches at (\S+)\.$"),
+     r"Chưa xác nhận lấy hàng trước \1; chuyến xuất lúc \2."),
+    (re.compile(r"^Picked but not dispatched by (\S+); last dispatch that keeps the promise is (\S+)\.$"),
+     r"Đã lấy hàng nhưng chưa xuất trước \1; lần xuất muộn nhất còn giữ được cam kết là \2."),
+    (re.compile(r"^(No pick confirmation .*?\.) Assigned to (.+)\.$"), None),
+    (re.compile(r"^Took ownership (\d+) min after the alert\.$"), r"Nhận xử lý \1 phút sau cảnh báo."),
+    (re.compile(r"^Not acknowledged within (\d+) min\. Moved from (.+) to (.+)\.$"),
+     r"Không có phản hồi trong \1 phút. Chuyển từ \2 sang \3."),
+    (re.compile(r"^(\w+) received \(source time (\S+)\)\. Nobody had started work, so the alert was closed\.$"),
+     r"Đã nhận \1 (giờ nguồn \2). Chưa ai bắt đầu xử lý nên cảnh báo được đóng."),
+    (re.compile(r"^(\w+) received \(source time (\S+)\)\.$"), r"Đã nhận \1 (giờ nguồn \2)."),
+    (re.compile(r"^Fulfilment feed stale, absence-based alerts paused$"), "Nguồn kho đã cũ, tạm dừng cảnh báo dựa trên sự kiện thiếu"),
+    (re.compile(r"^Fulfilment feed fresh again, alerts resumed$"), "Nguồn kho đã mới trở lại, cảnh báo hoạt động lại"),
+    (re.compile(r"^No fulfilment data for (\d+) min \(limit (\d+)\)\. Missing-event alerts paused to avoid false alarms\.$"),
+     r"Không có dữ liệu kho trong \1 phút (giới hạn \2). Tạm dừng cảnh báo thiếu sự kiện để tránh báo sai."),
+    (re.compile(r"^Source (\w+) (paused|resumed)$"), None),
+    (re.compile(r"^Fictional scenario loaded for (\S+)$"), r"Đã nạp kịch bản giả lập cho ngày \1"),
+    (re.compile(r"^Clock moved to (\S+)$"), r"Đồng hồ đã chuyển tới \1"),
+    (re.compile(r"^(DC coordinator|Shift lead) cannot record '(.+)'\. Escalate to the shift lead\.$"), None),
+    (re.compile(r"^Advance between 1 minute and 12 hours$"), "Chỉ tua từ 1 phút đến 12 giờ"),
+]
+
+
+def _sentence(text: str) -> str:
+    for pattern, repl in PATTERNS:
+        m = pattern.match(text)
+        if not m:
+            continue
+        if repl is not None:
+            return m.expand(repl)
+        # Composite sentences: translate the parts.
+        if text.startswith("No pick confirmation") and "Assigned to" in text:
+            return f"{_sentence(m.group(1))} Giao cho {m.group(2)}."
+        if text.startswith("Source "):
+            return f"Nguồn {m.group(1)} {'đã tạm dừng' if m.group(2) == 'paused' else 'đã khôi phục'}"
+        if "cannot record" in text:
+            return f"{VI.get(m.group(1), m.group(1))} không được ghi '{VI.get(m.group(2), m.group(2))}'. Hãy chuyển cho trưởng ca."
+    return text
+
+
+def translate(text: str | None, lang: str, **params) -> str:
+    if text is None:
+        return ""
+    if lang == "vi":
+        if text in VI:
+            out = VI[text]
+        elif text.startswith("Picked but not dispatched") and "Assigned to" in text:
+            head, owner = text.rsplit(" Assigned to ", 1)
+            out = f"{_sentence(head)} Giao cho {owner.rstrip('.')}."
+        else:
+            out = _sentence(text)
+    else:
+        out = text
+    return out.format(**params) if params else out
+
+
+VI_DAYS = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"]
+
+
+def day_label(dt: datetime, tz: str, lang: str) -> str:
+    local = dt.astimezone(ZoneInfo(tz))
+    if lang == "vi":
+        return f"{VI_DAYS[local.weekday()]}, {local.day:02d}/{local.month:02d}"
+    return local.strftime("%a %d %b")
+
+
+def pick(request_lang: str | None) -> str:
+    return request_lang if request_lang in LANGS else DEFAULT

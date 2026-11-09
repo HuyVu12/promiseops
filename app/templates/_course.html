@@ -1,0 +1,44 @@
+{# Shared timetable drawing: the hour axis and one order's course with its four controls. #}
+
+{% macro axis_lane(axis, now_pct, now) -%}
+<div class="lane axis">
+  {% for h in axis.hours %}<span class="hour" style="left:{{ h.pct }}%">{{ h.label if h.pct < 99 and (h.pct - now_pct) | abs > 2.5 else '' }}</span>{% endfor %}
+  <span class="now-flag" style="left:{{ now_pct }}%">{{ now | local }}</span>
+</div>
+{%- endmacro %}
+
+{% macro course_lane(c, axis, now_pct, big=False, show_missed=True) -%}
+<div class="lane {{ 'big' if big }}" style="--q:{{ axis.quarters }}">
+  {% for h in axis.hours %}<span class="hourline" style="left:{{ h.pct }}%"></span>{% endfor %}
+  <span class="leg {{ 'done' if c.outcome }}" style="left:{{ c.start_pct }}%;width:{{ c.end_pct - c.start_pct }}%"></span>
+  {% for s in c.stops %}
+    {% set cls = s.state ~ (' escalated' if s.escalated) ~ (' limit' if s.label == 'Last viable' and s.state == 'ahead') %}
+    <span class="ctl {{ cls }}" style="left:{{ s.pct }}%" title="{{ _(s.label) }} {{ s.time }}"></span>
+    {% if big %}
+    <span class="ctl-label {{ 'missed' if s.state == 'missed' }} {{ 'up' if loop.index0 is odd }}" style="left:{{ s.pct }}%">
+      <b>{{ s.time }}</b>{{ _(s.label) }}
+      <small>{% if s.actual %}{{ _('confirmed {t}', t=s.actual) }}{% elif s.state == 'missed' %}{{ _('not confirmed') }}{% elif s.label == 'Last viable' %}{{ _('planning limit') }}{% else %}{{ _('pending') }}{% endif %}</small>
+    </span>
+    {% else %}
+    {% set first_missed = (c.stops | selectattr('state', 'equalto', 'missed') | first) %}
+    <span class="ctl-label {{ 'missed show' if s.state == 'missed' and show_missed and s is sameas first_missed }}" style="left:{{ s.pct }}%">{{ _(s.label) }} {{ s.time }}</span>
+    {% endif %}
+  {% endfor %}
+  {% if c.outcome %}
+    <span class="outcome-flag {{ 'ontime' if c.outcome == 'on time' else 'late' }}" style="left:{{ c.end_pct }}%">{{ c.delivered }} {{ _(c.outcome) }}</span>
+  {% endif %}
+  <span class="now" style="left:{{ now_pct }}%"></span>
+</div>
+{%- endmacro %}
+
+{% macro legend() -%}
+<div class="legend" aria-label="Legend">
+  <span><i class="legkey"></i>{{ _('Promise course') }}</span>
+  <span><i class="ctl punched"></i>{{ _('Confirmed') }}</span>
+  <span><i class="ctl late"></i>{{ _('Confirmed late') }}</span>
+  <span><i class="ctl missed"></i>{{ _('Missed') }}</span>
+  <span><i class="ctl missed escalated"></i>{{ _('Escalated to shift lead') }}</span>
+  <span><i class="ctl"></i>{{ _('Ahead') }}</span>
+  <span><i class="nowkey"></i>{{ _('Now') }}</span>
+</div>
+{%- endmacro %}

@@ -48,7 +48,7 @@ def page(base_url):
         pg = browser.new_page(viewport={"width": 1440, "height": 900})
         errors = []
         pg.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
-        pg.goto(base_url)
+        pg.goto(base_url + "/app")
         yield pg
         assert errors == []
         browser.close()
