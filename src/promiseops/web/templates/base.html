@@ -4,13 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}PromiseOps{% endblock %} - PromiseOps</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%230f3b5f%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%229%22 fill=%22none%22 stroke=%22%23e8b6ea%22 stroke-width=%223%22/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
 <aside class="rail" aria-label="PromiseOps">
   <a class="brand" href="/">
     <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8"/><circle cx="16" cy="16" r="9"/><path d="M16 10.5V16l3.6 2.4"/></svg>
-    <span><span class="brand-name">PromiseOps</span><br><span class="brand-sub">{{ CFG.name }} · DC Stockholm South</span></span>
+    <span><span class="brand-name">PromiseOps</span><br><span class="brand-sub">{{ _(CFG.name) }} · {{ CFG.dc }}</span></span>
   </a>
   <nav class="nav">
     <a href="/app" class="{{ 'on' if active == 'queue' }}">{{ _('Exception queue') }}{% if open_count %}<span class="count">{{ open_count }}</span>{% endif %}</a>
@@ -28,7 +29,7 @@
     {% for s in freshness %}
     <div class="feed {{ 'bad' if s.stale }}" data-testid="source-{{ s.id }}">
       <span class="dot"></span>
-      <span>{{ _('Order management') if s.id == 'oms' else _('Warehouse fulfilment') }}: {% if s.age is none %}{{ _('no data') }}{% else %}{{ _('updated {n} min ago', n=s.age) }}{% endif %}</span>
+      <span>{{ _('Order management') if s.id == 'oms' else _('Warehouse fulfilment') }}: {% if s.age is none %}{{ _('no data') }}{% elif s.paused %}{{ _('no reply for {n} min', n=s.age) }}{% elif s.age == 0 %}{{ _('read just now') }}{% else %}{{ _('read {n} min ago', n=s.age) }}{% endif %}</span>
     </div>
     {% endfor %}
     <p class="feed-note">{{ _('Alerts pause when fulfilment data is older than {n} min.', n=CFG.stale_after_min) }}</p>
@@ -36,7 +37,7 @@
   <div class="rail-bottom">
     <form method="post" action="/role" class="role">
       <input type="hidden" name="next" value="{{ request.url.path }}">
-      <label for="role-select" class="rail-label">{{ _('Signed in as') }}</label>
+      <label for="role-select" class="rail-label">{{ _('Signed in as (demo)') }}</label>
       <select id="role-select" name="role" onchange="this.form.submit()" data-testid="role">
         {% for key, label in ROLES.items() %}
         <option value="{{ key }}" {{ 'selected' if key == role }}>{{ _(label) }} - {{ CFG.coordinator if key == 'coordinator' else CFG.shift_lead }}</option>
@@ -57,7 +58,8 @@
   <main class="page">
     {% if stale_task %}
     <div class="banner danger" role="alert" data-testid="stale-banner">
-      <strong>{{ _('Fulfilment data is stale.') }}</strong> {{ _(stale_task.note) }} {{ _('Owner') }}: {{ stale_task.owner }}.
+      {% set wms_feed = freshness | selectattr('id', 'equalto', 'wms') | first %}
+      <strong>{{ _('Fulfilment data is stale.') }}</strong> {{ _('No fulfilment data for {n} min (limit {m}). Missing-event alerts are paused to avoid false alarms.', n=wms_feed.age, m=CFG.stale_after_min) }} {{ _('Data task owner') }}: {{ stale_task.owner }}.
       {{ _('Keep using the standard floor process until data recovers.') }}
     </div>
     {% endif %}
@@ -68,7 +70,7 @@
 
   <footer class="demo" aria-label="{{ _('Demo controls') }}">
     <span class="demo-tag">{{ _('Demo controls') }}</span>
-    <span class="demo-note">{{ _('Simulation only: replaces real OMS/WMS feeds and wall-clock time.') }}</span>
+    <span class="demo-note">{{ _('Simulation only: replaces real OMS/WMS feeds and wall-clock time. Each recorded action takes {n} simulated minute.', n=action_minutes) }}</span>
     <form method="post" action="/sim/advance" class="inline">
       <input type="hidden" name="next" value="{{ request.url.path }}">
       <button name="minutes" value="5" data-testid="adv-5">+5 min</button>

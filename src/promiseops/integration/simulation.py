@@ -15,6 +15,10 @@ from promiseops import timeutil as tu
 from promiseops.config import MARKETS
 
 CLOCK_KEY = "sim_now"
+# Each recorded human action takes one simulated minute, so the audit log and the response-time KPI
+# read like a real shift instead of everything happening at the same instant.
+ACTION_MINUTES = 1
+MAX_ADVANCE_MIN = 12 * 60
 
 
 def now(conn: sqlite3.Connection) -> datetime:
@@ -66,18 +70,39 @@ def poll(conn: sqlite3.Connection, t: datetime) -> None:
     conn.commit()
 
 
+def _poll_times(start: datetime, end: datetime, every_min: int) -> list[datetime]:
+    """Adapter polls happen on a fixed clock grid (every N minutes on the hour), not relative to the last click."""
+    step = timedelta(minutes=every_min)
+    first = start.replace(second=0, microsecond=0)
+    first += timedelta(minutes=(-first.minute) % every_min)
+    if first <= start:
+        first += step
+    times = []
+    t = first
+    while t <= end:
+        times.append(t)
+        t += step
+    return times
+
+
 def advance(conn: sqlite3.Connection, minutes: int) -> datetime:
-    if minutes <= 0 or minutes > 12 * 60:
+    """Move the demo clock forward: poll the feeds and run the rules at every poll, then run the rules at the end."""
+    if minutes <= 0 or minutes > MAX_ADVANCE_MIN:
         raise ValueError("Advance between 1 minute and 12 hours")
-    step = timedelta(minutes=MARKETS["SE"].poll_interval_min)
-    t = now(conn)
-    end = t + timedelta(minutes=minutes)
-    while t < end:
-        t = min(t + step, end)
+    start = now(conn)
+    end = start + timedelta(minutes=minutes)
+    for t in _poll_times(start, end, MARKETS["SE"].poll_interval_min):
         db.set_meta(conn, CLOCK_KEY, tu.iso(t))
         poll(conn, t)
         engine.run(conn, t)
-    return t
+    db.set_meta(conn, CLOCK_KEY, tu.iso(end))
+    engine.run(conn, end)  # timers (escalation, staleness) move even between polls
+    return end
+
+
+def after_human_action(conn: sqlite3.Connection) -> datetime:
+    """Let simulated time pass for the action a person just recorded."""
+    return advance(conn, ACTION_MINUTES)
 
 
 def set_paused(conn: sqlite3.Connection, source: str, paused: bool) -> None:

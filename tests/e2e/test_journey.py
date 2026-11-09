@@ -23,8 +23,9 @@ def base_url(tmp_path_factory):
     import uvicorn
 
     from promiseops.web import app as main
+    from promiseops.web import deps
 
-    main.DB_PATH = tmp_path_factory.mktemp("e2e") / "e2e.db"
+    deps.settings.db_path = tmp_path_factory.mktemp("e2e") / "e2e.db"
     port = _free_port()
     server = uvicorn.Server(uvicorn.Config(main.app, host="127.0.0.1", port=port, log_level="warning"))
     thread = threading.Thread(target=server.run, daemon=True)
@@ -76,7 +77,10 @@ def test_core_journey_saves_the_promise(page, base_url):
     with page.expect_navigation():
         page.select_option("[data-testid=role]", "shift_lead")
     page.check("[data-testid=res-expedited]")
+    # Choosing the expedite makes the intervention cost required.
+    assert page.get_attribute("[data-testid=resolve-cost]", "required") is not None
     page.fill("[data-testid=resolve-note]", "Moved a picker, priority pick")
+    page.fill("[data-testid=resolve-cost]", "40")
     go(page, "[data-testid=resolve]")
     assert "Expedited by shift lead" in page.text_content("[data-testid=state]")
 
@@ -85,3 +89,6 @@ def test_core_journey_saves_the_promise(page, base_url):
     go(page, "[data-testid=adv-60]")
     assert "on time" in page.text_content("[data-testid=order-SE-1042]")
     assert "late" in page.text_content("[data-testid=order-SE-1077]")
+
+    page.goto(base_url + "/kpi")
+    assert page.text_content("[data-testid=kpi-prevented] .stat-value").strip() == "1"

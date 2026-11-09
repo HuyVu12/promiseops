@@ -1,231 +1,311 @@
 1
-00:00:00,000 --> 00:00:02,779
-Hi, we are team NgaChainAILayer2.
+00:00:00,000 --> 00:00:02,084
+We are team NgaChainAILayer2.
 
 2
-00:00:02,829 --> 00:00:09,293
-In Round 1 we proposed PromiseOps for Company A: catch orders that are about
+00:00:02,134 --> 00:00:07,883
+In Round 1 we found that late deliveries at Company A start as exceptions nobody
 
 3
-00:00:09,343 --> 00:00:14,950
-to miss their original delivery promise early enough to save them.
+00:00:07,933 --> 00:00:10,664
+owns in time, and proposed PromiseOps:
 
 4
-00:00:15,000 --> 00:00:17,007
-This is the working MVP.
+00:00:10,714 --> 00:00:16,392
+catch orders that are about to miss their original promise early enough to save
 
 5
-00:00:17,057 --> 00:00:23,179
-It runs locally, all data is fictional, and a demo harness at the bottom
+00:00:16,442 --> 00:00:20,107
+them, give each one an owner, and prove the result.
 
 6
-00:00:23,229 --> 00:00:29,950
-of the screen stands in for the real order and warehouse systems and the clock.
+00:00:20,157 --> 00:00:21,882
+This is the working MVP.
 
 7
-00:00:30,000 --> 00:00:34,272
-It is 09:00 at DC Stockholm South.
+00:00:21,932 --> 00:00:24,950
+It runs locally and all data is fictional.
 
 8
-00:00:34,322 --> 00:00:43,552
-Every order is drawn as a course of four controls on one timetable: pick,
+00:00:25,000 --> 00:00:27,278
+It is 09:00 at DC Stockholm South.
 
 9
-00:00:43,602 --> 00:00:50,543
-dispatch cutoff, last viable dispatch, and the promise.
+00:00:27,328 --> 00:00:31,215
+Every order is a course of four controls on one timetable:
 
 10
-00:00:50,593 --> 00:00:53,086
-The red line is now.
+00:00:31,265 --> 00:00:35,352
+pick, dispatch cutoff, last viable dispatch, and the promise.
 
 11
-00:00:53,136 --> 00:00:56,391
-Both data feeds are fresh.
+00:00:35,402 --> 00:00:36,742
+The red line is now.
 
 12
-00:00:56,441 --> 00:00:59,950
-Nothing needs attention yet.
+00:00:36,792 --> 00:00:40,076
+The yellow bar at the bottom is the demo harness:
 
 13
-00:01:00,000 --> 00:01:03,018
-At 09:30 two orders appear.
+00:00:40,126 --> 00:00:44,950
+it stands in for the real order and warehouse systems and for the clock.
 
 14
-00:01:03,068 --> 00:01:11,541
-SE-1042 has no pick confirmation, and its route leaves at 10:00, so we have
+00:00:45,000 --> 00:00:48,712
+At 09:30 two orders missed their pick.
 
 15
-00:01:11,591 --> 00:01:14,041
-thirty minutes to act.
+00:00:48,762 --> 00:00:53,354
+SE-1042 is the order from our Round 1 proposal:
 
 16
-00:01:14,091 --> 00:01:23,700
-The rule only fires because the warehouse feed was actually read after 09:30; silence
+00:00:53,404 --> 00:01:00,829
+a B2B site delivery of plasterboard, promised for 14:00, on the 10:00 route.
 
 17
-00:01:23,750 --> 00:01:26,655
-is never treated as proof.
+00:01:00,879 --> 00:01:04,885
+It ties with SE-1051, and B2B goes first.
 
 18
-00:01:26,705 --> 00:01:34,950
-Each exception gets one owner, Anna, and a fifteen-minute response timer.
+00:01:04,935 --> 00:01:11,578
+The rule only fires because the warehouse feed was read after 09:30:
 
 19
-00:01:35,000 --> 00:01:39,099
-Anna checks SE-1051 first.
+00:01:11,628 --> 00:01:14,950
+silence is never treated as proof.
 
 20
-00:01:39,149 --> 00:01:50,110
-The picker confirms it was packed at 09:20; the handheld synced late.
+00:01:15,000 --> 00:01:25,254
+Anna, the coordinator, takes ownership, which stops the fifteen-minute escalation
 
 21
-00:01:50,160 --> 00:02:01,439
-She records it as a false alarm with evidence, which later tells us how
+00:01:25,304 --> 00:01:26,064
+timer.
 
 22
-00:02:01,489 --> 00:02:04,950
-precise our rules are.
+00:01:26,114 --> 00:01:29,405
+The goods were not picked.
 
 23
-00:02:05,000 --> 00:02:13,180
-SE-1042 is real: the goods were not picked.
+00:01:29,455 --> 00:01:38,823
+An expedite spends warehouse capacity, so a coordinator cannot approve it:
 
 24
-00:02:13,230 --> 00:02:27,151
-Expediting spends warehouse capacity, so a coordinator cannot approve it.
+00:01:38,873 --> 00:01:44,950
+she escalates to the shift lead with the reason.
 
 25
-00:02:27,201 --> 00:02:36,529
-Anna escalates to the shift lead with the reason.
+00:01:45,000 --> 00:01:53,546
+Erik, the shift lead, moves a picker and records the expedite with evidence and its
 
 26
-00:02:36,579 --> 00:02:44,950
-Decision rights are explicit in the product.
+00:01:53,596 --> 00:01:55,141
+cost, ten euro.
 
 27
-00:02:45,000 --> 00:02:55,258
-Erik, the shift lead, reads the note, moves a picker and records the expedite,
+00:01:55,191 --> 00:02:03,634
+Round 1 promised that the cost of every action is logged, so Finance can check our
 
 28
-00:02:55,308 --> 00:02:57,902
-again with evidence.
+00:02:03,684 --> 00:02:06,258
+business-case assumption.
 
 29
-00:02:57,952 --> 00:03:03,717
-The activity log shows who did what and why.
+00:02:06,308 --> 00:02:14,958
+The activity log shows who took the case, who escalated, who decided, why, and when.
 
 30
-00:03:03,767 --> 00:03:14,950
-PromiseOps never writes back to the warehouse system; people act, the system records.
+00:02:15,008 --> 00:02:19,950
+Nothing is written back to the warehouse system.
 
 31
-00:03:15,000 --> 00:03:20,291
-What if the warehouse feed goes quiet?
+00:02:20,000 --> 00:02:27,006
+SE-1051 was packed at 09:20; the handheld synced late.
 
 32
-00:03:20,341 --> 00:03:31,255
-After thirty minutes the feed turns red, a data task opens for the integration
+00:02:27,056 --> 00:02:33,024
+Anna closes it as a false alarm with evidence.
 
 33
-00:03:31,305 --> 00:03:41,657
-desk, and no new alerts are created, because an empty feed proves nothing.
+00:02:33,074 --> 00:02:39,950
+That number tells us later how precise the rules are.
 
 34
-00:03:41,707 --> 00:03:49,950
-Orders picked during the outage do not become false alarms.
+00:02:40,000 --> 00:02:45,079
+What if the warehouse feed goes quiet?
 
 35
-00:03:50,000 --> 00:04:05,950
-When the feed recovers, the backlog arrives first and only then do the rules
+00:02:45,129 --> 00:02:56,356
+After thirty minutes the feed turns red, a data task opens for the integration desk,
 
 36
-00:04:06,000 --> 00:04:09,950
-run, on fresh data.
+00:02:56,406 --> 00:03:00,282
+and no new alerts are raised.
 
 37
-00:04:10,000 --> 00:04:13,839
-Fast forward to the afternoon.
+00:03:00,332 --> 00:03:11,024
+Controls that passed while the feed was silent are shown as unknown, not missed:
 
 38
-00:04:13,889 --> 00:04:24,987
-SE-1042 was picked and dispatched late, shown in brown, but delivered at 12:30, before
+00:03:11,074 --> 00:03:14,950
+an empty feed proves nothing.
 
 39
-00:04:25,037 --> 00:04:27,320
-its 14:00 promise.
+00:03:15,000 --> 00:03:24,678
+When the feed recovers, the backlog arrives first and only then do the rules run.
 
 40
-00:04:27,370 --> 00:04:37,691
-SE-1077 had no vehicle and nobody acted, so it arrives late and is counted late.
+00:03:24,728 --> 00:03:27,715
+They find a real problem:
 
 41
-00:04:37,741 --> 00:04:44,950
-Without the expedite, SE-1042 would also have been late.
+00:03:27,765 --> 00:03:33,619
+SE-1077 is picked but has no vehicle until 11:50.
 
 42
-00:04:45,000 --> 00:04:54,108
-Outcomes are measured against the original promise, which can never be edited, with B2B
+00:03:33,669 --> 00:03:43,586
+The promise cannot be kept, so Anna hands it to customer service, who give the site
 
 43
-00:04:54,158 --> 00:05:03,582
-and B2C reported separately: on-time rate, flagged orders still on time, time to ownership
+00:03:43,636 --> 00:03:44,950
+a new time.
 
 44
-00:05:03,632 --> 00:05:05,371
-and false alarms.
+00:03:45,000 --> 00:03:47,057
+Five hours later.
 
 45
-00:05:05,421 --> 00:05:14,950
-In the pilot these are compared against control stores before any business case is claimed.
+00:03:47,107 --> 00:03:56,664
+SE-1042 was picked and dispatched late, shown in brown, but delivered at 12:32,
 
 46
-00:05:15,000 --> 00:05:29,950
-The interface also runs in Vietnamese; system messages are translated too.
+00:03:56,714 --> 00:03:59,738
+before its 14:00 promise.
 
 47
-00:05:30,000 --> 00:05:31,946
-What changed since Round 1.
+00:03:59,788 --> 00:04:09,950
+SE-1077 arrived at 14:35 and is counted late, even though the customer was informed.
 
 48
-00:05:31,996 --> 00:05:37,787
-The scope is the one we proposed: one DC, two rules, owner, escalation, outcome
+00:04:10,000 --> 00:04:16,895
+Outcomes are measured against the original promise, which can never be edited.
 
 49
-00:05:37,837 --> 00:05:39,266
-log and measurement.
+00:04:16,945 --> 00:04:24,370
+An order counts as late as soon as its promise passes without a delivery, so silence
 
 50
-00:05:39,316 --> 00:05:42,150
-We refined three things while building.
+00:04:24,420 --> 00:04:26,629
+never looks like success.
 
 51
-00:05:42,200 --> 00:05:48,656
-First, the stale-data rule: a fixed 30-minute threshold still created false alarms, so a
+00:04:26,679 --> 00:04:29,508
+One late delivery was prevented.
 
 52
-00:05:48,706 --> 00:05:53,906
-missing event now only counts if the feed was read after the milestone.
+00:04:29,558 --> 00:04:36,364
+At the Round 1 assumption of twenty-five euro per late delivery that is worth
 
 53
-00:05:53,956 --> 00:05:59,599
-Second, we added a demo harness so the whole morning can be shown in minutes.
+00:04:36,414 --> 00:04:40,834
+twenty-five euro, next to ten euro of logged cost.
 
 54
-00:05:59,649 --> 00:06:06,475
-Third, the timetable view, because time left and ownership matter more than a list of alerts.
+00:04:40,884 --> 00:04:48,044
+The scorecard uses the Round 1 pilot targets, and says honestly that three alerts
 
 55
-00:06:06,525 --> 00:06:09,950
-As proposed, there is no AI inside the product.
+00:04:48,094 --> 00:04:49,950
+are too few to judge.
 
 56
-00:06:10,000 --> 00:06:20,557
-Under the hood: one FastAPI service, SQLite, idempotent ingestion, and 22 automated tests including
+00:04:50,000 --> 00:04:54,135
+Now the same morning when nobody acts.
 
 57
-00:06:20,607 --> 00:06:23,879
-a browser test of this journey.
+00:04:54,185 --> 00:04:59,625
+SE-1042 is picked at 11:20 and delivered at 14:25:
 
 58
-00:06:23,929 --> 00:06:24,950
+00:04:59,675 --> 00:05:00,219
+late.
+
+59
+00:05:00,269 --> 00:05:04,622
+On-time falls from 93.3 to 86.7 percent.
+
+60
+00:05:04,672 --> 00:05:13,268
+That difference is the value PromiseOps is meant to prove in the pilot, against
+
+61
+00:05:13,318 --> 00:05:14,950
+control stores.
+
+62
+00:05:15,000 --> 00:05:24,950
+The interface also runs in Vietnamese, including system messages.
+
+63
+00:05:25,000 --> 00:05:27,553
+What changed since Round 1, and why.
+
+64
+00:05:27,603 --> 00:05:29,943
+The scope is the one we proposed:
+
+65
+00:05:29,993 --> 00:05:35,666
+one DC, two rules, one owner, escalation, outcomes against the original promise,
+
+66
+00:05:35,716 --> 00:05:37,986
+read only, no AI in the product.
+
+67
+00:05:38,036 --> 00:05:43,567
+We alert at the milestone instead of after a fifteen-minute grace, because the
+
+68
+00:05:43,617 --> 00:05:49,574
+read-after-milestone rule already prevents false alarms and leaves more time to act;
+
+69
+00:05:49,624 --> 00:05:52,461
+the grace stays a setting for the pilot.
+
+70
+00:05:52,511 --> 00:05:58,113
+A demo harness replaces Company A's feeds and clock, and a role switch replaces
+
+71
+00:05:58,163 --> 00:05:59,227
+single sign-on.
+
+72
+00:05:59,277 --> 00:06:04,950
+We added the timetable view, Vietnamese, cost logging and the Round 1 scorecard.
+
+73
+00:06:05,000 --> 00:06:06,161
+Under the hood:
+
+74
+00:06:06,211 --> 00:06:12,406
+one FastAPI service with clear modules, SQLite, idempotent ingestion through the
+
+75
+00:06:12,456 --> 00:06:18,340
+same adapter for polled and pushed data, an API key for integrations, and 38
+
+76
+00:06:18,390 --> 00:06:22,881
+automated tests, including a browser test of this journey.
+
+77
+00:06:22,931 --> 00:06:29,126
+Every closed case is a labelled example for the risk model planned after Gate 2.
+
+78
+00:06:29,176 --> 00:06:29,950
 Thank you.

@@ -63,8 +63,14 @@ def events_by_type(conn: sqlite3.Connection, order_id: str) -> dict[str, str]:
     return {r["type"]: r["t"] for r in rows}
 
 
-def course(order: sqlite3.Row, events: dict[str, str], now: datetime, axis: Axis, escalated: bool = False) -> dict:
+def course(
+    order: sqlite3.Row, events: dict[str, str], now: datetime, axis: Axis, escalated: bool = False,
+    read_until: datetime | None = None,
+) -> dict:
+    """Draw one order. A passed control without its event is "missed" only if the fulfilment feed was read
+    after it; otherwise it is "unknown" (silence from a feed that was not read proves nothing)."""
     now_iso = tu.iso(now)
+    read_iso = tu.iso(read_until) if read_until else now_iso
     dispatched = events.get("DISPATCHED") or events.get("DELIVERED")
     stops = []
     for label, column, event_type in CONTROLS:
@@ -75,7 +81,7 @@ def course(order: sqlite3.Row, events: dict[str, str], now: datetime, axis: Axis
         elif event_type is None and actual:
             state = "passed" if actual <= due else "missed"
         elif due <= now_iso:
-            state = "missed"
+            state = "missed" if due <= read_iso else "unknown"
         else:
             state = "ahead"
         stops.append({

@@ -17,7 +17,7 @@
     {% if big %}
     <span class="ctl-label {{ 'missed' if s.state == 'missed' }} {{ 'up' if loop.index0 is odd }}" style="left:{{ s.pct }}%">
       <b>{{ s.time }}</b>{{ _(s.label) }}
-      <small>{% if s.actual %}{{ _('confirmed {t}', t=s.actual) }}{% elif s.state == 'missed' %}{{ _('not confirmed') }}{% elif s.label == 'Last viable' %}{{ _('planning limit') }}{% else %}{{ _('pending') }}{% endif %}</small>
+      <small>{% if s.actual %}{{ _('confirmed {t}', t=s.actual) }}{% elif s.state == 'missed' %}{{ _('not confirmed') }}{% elif s.label == 'Last viable' %}{{ _('planning limit') }}{% elif s.state == 'unknown' %}{{ _('not known yet') }}{% else %}{{ _('pending') }}{% endif %}</small>
     </span>
     {% else %}
     {% set first_missed = (c.stops | selectattr('state', 'equalto', 'missed') | first) %}
@@ -42,7 +42,9 @@
   <span><i class="ctl late"></i>{{ _('Confirmed late') }}</span>
   <span><i class="ctl missed"></i>{{ _('Missed') }}</span>
   <span><i class="ctl missed escalated"></i>{{ _('Escalated to shift lead') }}</span>
+  <span><i class="ctl unknown"></i>{{ _('Not known: feed not read since') }}</span>
   <span><i class="ctl"></i>{{ _('Ahead') }}</span>
+  <span><i class="punchkey"></i>{{ _('Actual time') }}</span>
   <span><i class="nowkey"></i>{{ _('Now') }}</span>
 </div>
 {%- endmacro %}

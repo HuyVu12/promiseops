@@ -1,6 +1,7 @@
-"""Fully fictional demo scenario: one Swedish DC, 12 stores, one morning of home deliveries.
+"""Fully fictional demo scenario: one Swedish DC, 12 stores, one morning of timed deliveries.
 
-No Company A data is used. Numbers are illustrative, matching the Round 1 scenario (order SE-1042).
+No Company A data is used. Numbers are illustrative. The hero order SE-1042 is the Round 1 example
+(slide 4): a B2B site delivery of plasterboard, promised for 14:00, on the 10:00 route.
 """
 
 from __future__ import annotations
@@ -11,12 +12,12 @@ from promiseops.core import engine
 from promiseops.integration import ingest, simulation
 from promiseops.storage import db
 from promiseops import timeutil as tu
-from promiseops.config import FULFILMENT_SOURCE, ORDER_SOURCE
+from promiseops.config import DEFAULT_MARKET, FULFILMENT_SOURCE, MARKETS, ORDER_SOURCE
 
 DAY = "2026-11-10"
-TZ = "Europe/Stockholm"
+TZ = MARKETS[DEFAULT_MARKET].tz
 START = "09:00"
-DC = "DC Stockholm South"
+DC = MARKETS[DEFAULT_MARKET].dc
 
 STORES = [
     "S01 Sodermalm", "S02 Kungsholmen", "S03 Solna", "S04 Nacka", "S05 Huddinge", "S06 Taby",
@@ -47,10 +48,10 @@ NORMAL = [
 ]
 
 SPECIAL = [
-    # SE-1042: goods genuinely not picked. Delivered on time only if the shift lead expedites in time.
-    ("SE-1042", 3, "B2C", "A"),
+    # SE-1042: B2B site delivery, goods genuinely not picked. On time only if the shift lead expedites in time.
+    ("SE-1042", 3, "B2B", "A"),
     # SE-1051: picked on time, but the handheld synced 35 minutes late. A false alarm worth recording.
-    ("SE-1051", 6, "B2B", "A"),
+    ("SE-1051", 6, "B2C", "A"),
     # SE-1060: nobody acknowledges; the alert escalates, then clears when the pick arrives.
     ("SE-1060", 1, "B2C", "B"),
     # SE-1077: picked, but the vehicle is short. Promise cannot be kept; customer service informs the customer.
@@ -62,11 +63,19 @@ def _t(hhmm: str) -> str:
     return tu.iso(tu.local_dt(DAY, hhmm, TZ))
 
 
+# What the order is, where the story needs it; otherwise a neutral reference.
+CUSTOMER_REFS = {
+    "SE-1042": "Trade customer 1042 · site delivery, plasterboard",
+    "SE-1077": "Trade customer 1077 · site delivery, insulation",
+}
+
+
 def _order(order_id: str, store: int, ctype: str, route: str) -> dict:
     pick, cutoff, latest, promise = ROUTES[route]
+    default_ref = f"{'Trade' if ctype == 'B2B' else 'Household'} customer {order_id[-4:]}"
     return {
-        "id": order_id, "market": "SE", "dc": DC, "store": STORES[store], "customer_type": ctype,
-        "customer_ref": f"{'Business' if ctype == 'B2B' else 'Household'} customer {order_id[-4:]}",
+        "id": order_id, "market": DEFAULT_MARKET, "dc": DC, "store": STORES[store], "customer_type": ctype,
+        "customer_ref": CUSTOMER_REFS.get(order_id, default_ref),
         "promised_at": _t(promise), "pick_due_at": _t(pick),
         "dispatch_cutoff_at": _t(cutoff), "latest_dispatch_at": _t(latest),
     }
@@ -94,6 +103,7 @@ def seed(conn: sqlite3.Connection) -> None:
         ],
     )
     db.set_meta(conn, simulation.CLOCK_KEY, tu.iso(start))
+    db.set_meta(conn, "schema_version", db.SCHEMA_VERSION)
 
     for oid, store, ctype, route, _ in NORMAL:
         ingest.ingest_order(conn, _order(oid, store, ctype, route), start)
