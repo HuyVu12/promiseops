@@ -5,6 +5,9 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
+# Bump when the schema changes; a database with another version is rebuilt from the demo seed.
+SCHEMA_VERSION = "2"
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (
     key TEXT PRIMARY KEY,
@@ -70,6 +73,7 @@ CREATE TABLE IF NOT EXISTS exceptions (
     acknowledged_at TEXT,
     resolved_at TEXT,
     resolution TEXT,
+    action_cost_eur REAL,            -- cost of the intervention, logged with the outcome (Round 1: PROVE)
     event_arrived_at TEXT,           -- when the missing event finally showed up
     UNIQUE (order_id, type)          -- one exception per order and cause
 );
@@ -109,7 +113,7 @@ CREATE TABLE IF NOT EXISTS sim_feed (
 
 
 def connect(path: Path | str) -> sqlite3.Connection:
-    conn = sqlite3.connect(str(path), check_same_thread=False)
+    conn = sqlite3.connect(str(path), check_same_thread=False, timeout=10)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
@@ -118,6 +122,14 @@ def connect(path: Path | str) -> sqlite3.Connection:
 def init(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA)
     conn.commit()
+
+
+def is_current(conn: sqlite3.Connection) -> bool:
+    """True when the database was built with this code's schema (and has been seeded)."""
+    try:
+        return get_meta(conn, "schema_version") == SCHEMA_VERSION
+    except sqlite3.OperationalError:
+        return False
 
 
 def reset(conn: sqlite3.Connection) -> None:

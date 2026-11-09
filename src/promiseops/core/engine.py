@@ -1,4 +1,12 @@
-"""Exception rules, data-freshness guard and escalation. Deterministic and explainable by design."""
+"""Exception rules, data-freshness guard and escalation. Deterministic and explainable by design.
+
+One evaluation cycle (``run``) does four things per market, in this order:
+
+1. reconcile: a missing event that finally arrived closes untouched alerts and informs owners;
+2. guard: if the fulfilment feed is stale, absence-based rules pause and a data task opens;
+3. detect: the two Round 1 rules raise at most one exception per order and cause;
+4. escalate: an alert nobody took within the response time moves to the shift lead.
+"""
 
 from __future__ import annotations
 
@@ -10,6 +18,12 @@ from promiseops.config import EXCEPTION_TYPES, FULFILMENT_SOURCE, MARKETS, Marke
 
 SYSTEM = "PromiseOps"
 
+# The event that settles each exception type.
+AWAITED_EVENTS = {
+    "MISSING_PICK": ("PICK_CONFIRMED",),
+    "MISSING_DISPATCH": ("DISPATCHED", "DELIVERED"),
+}
+
 
 def audit(conn: sqlite3.Connection, exception_id: int | None, now: datetime, actor: str, action: str, note: str = "") -> None:
     conn.execute(
@@ -18,11 +32,15 @@ def audit(conn: sqlite3.Connection, exception_id: int | None, now: datetime, act
     )
 
 
-def source_age_min(conn: sqlite3.Connection, source: str, now: datetime) -> int | None:
+def source_read_at(conn: sqlite3.Connection, source: str) -> datetime | None:
+    """When the adapter last read the source successfully (with or without new records)."""
     row = conn.execute("SELECT last_received_at FROM sources WHERE id = ?", (source,)).fetchone()
-    if not row or not row["last_received_at"]:
-        return None
-    return tu.minutes_between(tu.parse(row["last_received_at"]), now)
+    return tu.parse(row["last_received_at"]) if row and row["last_received_at"] else None
+
+
+def source_age_min(conn: sqlite3.Connection, source: str, now: datetime) -> int | None:
+    read_at = source_read_at(conn, source)
+    return None if read_at is None else tu.minutes_between(read_at, now)
 
 
 def is_stale(conn: sqlite3.Connection, source: str, now: datetime, cfg: MarketConfig) -> bool:
@@ -30,11 +48,12 @@ def is_stale(conn: sqlite3.Connection, source: str, now: datetime, cfg: MarketCo
     return age is None or age > cfg.stale_after_min
 
 
-def _has_event(conn: sqlite3.Connection, order_id: str, type_: str) -> str | None:
-    row = conn.execute(
-        "SELECT MIN(occurred_at) AS t FROM events WHERE order_id = ? AND type = ?", (order_id, type_)
+def _first_event(conn: sqlite3.Connection, order_id: str, types: tuple[str, ...]) -> sqlite3.Row | None:
+    marks = ",".join("?" * len(types))
+    return conn.execute(
+        f"SELECT type, occurred_at FROM events WHERE order_id = ? AND type IN ({marks}) ORDER BY occurred_at LIMIT 1",
+        (order_id, *types),
     ).fetchone()
-    return row["t"]
 
 
 def _guard_freshness(conn: sqlite3.Connection, now: datetime, cfg: MarketConfig) -> bool:
@@ -71,37 +90,38 @@ def _create_exception(
             tu.iso(now + timedelta(minutes=cfg.ack_sla_min)),
         ),
     )
-    if cur.rowcount:
+    if cur.rowcount:  # UNIQUE(order_id, type): one exception per order and cause
         audit(conn, cur.lastrowid, now, SYSTEM, "CREATED", f"{reason} Assigned to {cfg.coordinator}.")
 
 
 def _detect(conn: sqlite3.Connection, now: datetime, cfg: MarketConfig) -> None:
+    # "No event" only means "not done" if the source was actually read after the milestone passed.
+    read_until = source_read_at(conn, FULFILMENT_SOURCE)
+    if read_until is None:
+        return
     orders = conn.execute(
         "SELECT * FROM orders o WHERE market = ? AND NOT EXISTS "
         "(SELECT 1 FROM events e WHERE e.order_id = o.id AND e.type IN ('DISPATCHED', 'DELIVERED'))",
         (cfg.code,),
     ).fetchall()
-    # "No event" only means "not done" if we actually read the source after the milestone passed.
-    row = conn.execute("SELECT last_received_at FROM sources WHERE id = ?", (FULFILMENT_SOURCE,)).fetchone()
-    read_until = tu.parse(row["last_received_at"]) if row and row["last_received_at"] else None
-    if read_until is None:
-        return
+    grace = timedelta(minutes=cfg.pick_grace_min)
     for o in orders:
-        picked = _has_event(conn, o["id"], "PICK_CONFIRMED")
-        if not picked and read_until >= tu.parse(o["pick_due_at"]):
+        picked = _first_event(conn, o["id"], AWAITED_EVENTS["MISSING_PICK"]) is not None
+        if not picked and read_until >= tu.parse(o["pick_due_at"]) + grace:
             _create_exception(
                 conn, o, "MISSING_PICK",
                 f"No pick confirmation by {tu.local(o['pick_due_at'], cfg.tz)}; "
                 f"route dispatches at {tu.local(o['dispatch_cutoff_at'], cfg.tz)}.",
                 o["dispatch_cutoff_at"], now, cfg,
             )
-        # Only raise a dispatch alert once picked; otherwise the pick alert already covers the root cause.
+        if not picked:
+            continue  # the pick alert already covers the root cause; no second alert for it
         # After a shift lead expedites, the plan is the latest viable dispatch, not the normal cutoff.
         expedited = conn.execute(
             "SELECT 1 FROM exceptions WHERE order_id = ? AND resolution = 'EXPEDITED'", (o["id"],)
         ).fetchone()
         dispatch_due = o["latest_dispatch_at"] if expedited else o["dispatch_cutoff_at"]
-        if picked and read_until >= tu.parse(dispatch_due):
+        if read_until >= tu.parse(dispatch_due):
             _create_exception(
                 conn, o, "MISSING_DISPATCH",
                 f"Picked but not dispatched by {tu.local(dispatch_due, cfg.tz)}; "
@@ -110,17 +130,15 @@ def _detect(conn: sqlite3.Connection, now: datetime, cfg: MarketConfig) -> None:
             )
 
 
-def _reconcile_events(conn: sqlite3.Connection, now: datetime) -> None:
+def _reconcile_events(conn: sqlite3.Connection, now: datetime, cfg: MarketConfig) -> None:
     """When the missing event arrives: auto-clear untouched alerts, inform owners of worked ones."""
-    awaited = {"MISSING_PICK": ("PICK_CONFIRMED",), "MISSING_DISPATCH": ("DISPATCHED", "DELIVERED")}
-    rows = conn.execute("SELECT * FROM exceptions WHERE event_arrived_at IS NULL").fetchall()
+    rows = conn.execute(
+        "SELECT x.* FROM exceptions x JOIN orders o ON o.id = x.order_id "
+        "WHERE o.market = ? AND x.event_arrived_at IS NULL",
+        (cfg.code,),
+    ).fetchall()
     for x in rows:
-        types = awaited[x["type"]]
-        marks = ",".join("?" * len(types))
-        ev = conn.execute(
-            f"SELECT type, occurred_at FROM events WHERE order_id = ? AND type IN ({marks}) ORDER BY occurred_at LIMIT 1",
-            (x["order_id"], *types),
-        ).fetchone()
+        ev = _first_event(conn, x["order_id"], AWAITED_EVENTS[x["type"]])
         if not ev:
             continue
         conn.execute("UPDATE exceptions SET event_arrived_at = ? WHERE id = ?", (tu.iso(now), x["id"]))
@@ -153,9 +171,9 @@ def _escalate_overdue(conn: sqlite3.Connection, now: datetime, cfg: MarketConfig
 
 
 def run(conn: sqlite3.Connection, now: datetime) -> None:
-    """One evaluation cycle. In production this runs as a background job after each adapter poll."""
+    """One evaluation cycle. Runs after every adapter poll and after every record pushed to the API."""
     for cfg in MARKETS.values():
-        _reconcile_events(conn, now)
+        _reconcile_events(conn, now, cfg)
         if _guard_freshness(conn, now, cfg):
             _detect(conn, now, cfg)
         _escalate_overdue(conn, now, cfg)

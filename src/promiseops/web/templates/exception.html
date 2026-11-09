@@ -64,7 +64,7 @@
           <span class="log-time">{{ l.at | local }}</span>
           <span class="log-actor">{{ _('System') if l.actor == 'PromiseOps' else l.actor }}</span>
           <span class="log-action act-{{ l.action | lower }}">{{ _(l.action | replace('_', ' ') | lower) | capitalize }}</span>
-          {% if l.note %}<span class="log-note">{{ _(l.note) if l.actor == 'PromiseOps' or l.action in ('ACKNOWLEDGED',) else l.note }}</span>{% endif %}
+          {% if l.note %}<span class="log-note">{{ _(l.note) if l.actor == 'PromiseOps' or l.action in ('ACKNOWLEDGED', 'COST_LOGGED') else l.note }}</span>{% endif %}
         </li>
         {% endfor %}
       </ol>
@@ -79,6 +79,9 @@
         <dt>{{ _('Store') }}</dt><dd>{{ order.store }}</dd>
         <dt>DC</dt><dd>{{ order.dc }}</dd>
         <dt>{{ _('Owner') }}</dt><dd data-testid="owner">{{ x.owner }} <span class="muted">({{ _(ROLES[x.owner_role]) }})</span>{% if x.escalated %} <span class="tag esc">{{ _('Escalated') }}</span>{% endif %}</dd>
+        {% if x.action_cost_eur is not none %}
+        <dt>{{ _('Cost logged') }}</dt><dd data-testid="cost">EUR {{ '%g' % x.action_cost_eur }}</dd>
+        {% endif %}
         {% if x.status == 'OPEN' %}
         <dt>{{ _('Response due') }}</dt><dd class="{{ 'bad-text' if ack_left <= 0 }}">{{ x.ack_due_at | local }}{% if ack_left < 0 %} ({{ _('overdue') }}){% elif ack_left == 0 %} ({{ _('now') }}){% else %} ({{ _('{n} min', n=ack_left) }}){% endif %}</dd>
         {% endif %}
@@ -99,10 +102,10 @@
       <p class="hint">{{ _('Taking ownership stops the {n}-minute escalation timer.', n=CFG.ack_sla_min) }}</p>
       {% endif %}
 
-      <form method="post" action="/exceptions/{{ x.id }}/resolve" class="stack" data-testid="resolve-form">
+      <form method="post" action="/exceptions/{{ x.id }}/resolve" class="stack" data-testid="resolve-form" id="resolve-form">
         <fieldset>
           <legend>{{ _('What did you verify?') }}</legend>
-          {% for key in ['FALSE_ALARM', 'EXPEDITED', 'CUSTOMER_NOTIFIED'] %}
+          {% for key in HUMAN_RESOLUTIONS %}
           <label class="choice {{ '' if key in allowed else 'disabled' }}">
             <input type="radio" name="resolution" value="{{ key }}" {{ '' if key in allowed else 'disabled' }} required data-testid="res-{{ key | lower }}">
             <span>{{ _(RESOLUTIONS[key]) }}{% if key not in allowed %}<span class="sub">{{ _('Shift lead decision') }}</span>{% endif %}</span>
@@ -111,8 +114,30 @@
         </fieldset>
         <label for="resolve-note">{{ _('Evidence and reason') }}</label>
         <textarea id="resolve-note" name="note" rows="3" required placeholder="{{ _('Who you spoke to, what you saw, what happens next') }}" data-testid="resolve-note"></textarea>
+        {% if 'EXPEDITED' in allowed %}
+        <div class="cost-field" data-testid="cost-field">
+          <label for="resolve-cost">{{ _('Intervention cost (EUR)') }}</label>
+          <input id="resolve-cost" name="cost" inputmode="decimal" autocomplete="off" placeholder="{{ _('e.g. 40 for 1 hour of overtime') }}" data-testid="resolve-cost">
+          <span class="sub">{{ _('Required for an expedite, 0 if none. Finance checks the Round 1 assumption of EUR {n} avoided per late delivery against these costs.', n=AVOIDED_EUR) }}</span>
+        </div>
+        {% endif %}
         <button class="primary" data-testid="resolve">{{ _('Record outcome') }}</button>
       </form>
+      <script>
+        (function () {
+          var form = document.getElementById('resolve-form');
+          var cost = document.getElementById('resolve-cost');
+          if (!form || !cost) return;
+          function sync() {
+            var picked = form.querySelector('input[name=resolution]:checked');
+            var expedite = picked && picked.value === 'EXPEDITED';
+            cost.required = !!expedite;
+            cost.closest('.cost-field').classList.toggle('needed', !!expedite);
+          }
+          form.addEventListener('change', sync);
+          sync();
+        })();
+      </script>
 
       {% if x.owner_role != 'shift_lead' %}
       <form method="post" action="/exceptions/{{ x.id }}/escalate" class="stack">

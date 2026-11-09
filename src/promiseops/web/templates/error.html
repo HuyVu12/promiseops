@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ status }} - PromiseOps</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body class="error-page">
+  <main class="error-box">
+    <p class="error-code">{{ status }}</p>
+    <h1>{{ _('Page not found') if status == 404 else _('Something went wrong') }}</h1>
+    <p class="lede">{{ _(detail) }}</p>
+    <p><a class="button primary" href="/app">{{ _('Back to the exception queue') }}</a></p>
+  </main>
+</body>
+</html>

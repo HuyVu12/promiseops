@@ -1,13 +1,15 @@
-"""Fills the AI Journal template (unpacked docx) for team NgaChainAILayer2 and repacks it.
+"""Fills the challenge's AI Journal template for team NgaChainAILayer2.
 
-Usage: python fill_ai_journal.py <unpacked_dir> <out.docx>
-Content reflects what actually happened in the Round 2 build session; the team should review it.
+Usage: python scripts/fill_ai_journal.py "<AI JOURNAL TEMPLATE.docx>" "<out.docx>"
+The template is unpacked to a temporary folder, filled and repacked. Export to PDF from Word.
+The content describes what happened in the Round 2 build; the team reviews and edits it before submitting.
 """
 
 from __future__ import annotations
 
 import re
 import sys
+import tempfile
 import zipfile
 from pathlib import Path
 from xml.sax.saxutils import escape
@@ -15,63 +17,68 @@ from xml.sax.saxutils import escape
 SDT_TEXT = [
     # Team name, AI tools
     "NgaChainAILayer2",
-    "Claude Code (Claude Opus 5.5) as the main pair-engineer, with skills: impeccable (UI critique, polish, design-direction roll), "
-    "taste-skill (landing page, palette and type deal), c4-architecture and Mermaid CLI (diagrams), webapp-testing with Playwright "
-    "(browser checks and E2E test), docx. GitHub CLI for the repository.",
+    "Claude Code (Claude Opus 5.5) as pair engineer and as a separate strict reviewer; its add-ons for UI critique, "
+    "landing-page design and browser testing. Playwright for the automated browser test and the screenshots we "
+    "reviewed. GitHub CLI for the repository. Microsoft Word to export this journal.",
     # AI strategy (max 150 words)
-    "We treated AI as a fast pair-engineer, not as the decision maker. Every technical decision had to trace back to our Round 1 "
-    "proposal: AI first read the Round 2 brief and our proposal, then proposed a narrow MVP (one Swedish DC, two exception rules, "
-    "one end-to-end journey). The team made the binding choices: stack (FastAPI + SQLite, server-rendered UI), no AI inside the "
-    "product, the visual direction, and a Vietnamese language option. AI wrote code together with automated tests (unit, HTTP and "
-    "a real-browser E2E test), and we required it to look at real screenshots after every change instead of trusting its own code. "
-    "That visual check found a real bug: a paused data feed produced nine false alarms. Diagrams, journey and journal were drafted "
-    "by AI from the running app, then checked by us against what the MVP actually does.",
+    "We used AI as a fast pair engineer and as a strict reviewer, never as the decision maker. Every change had to "
+    "trace back to our Round 1 proposal: AI read the Round 2 brief and our deck and proposed a narrow MVP (one Swedish "
+    "DC, two rules, one end-to-end journey); we chose the stack, the rule of no AI inside the product, the visual "
+    "direction and the Vietnamese option. AI wrote code together with tests, and we only accepted what we could check: "
+    "38 automated tests, including a real-browser run of the journey, and screenshots of every screen. Before "
+    "submitting we ran a separate AI review told to be strict. It found real gaps, such as an on-time KPI that ignored "
+    "overdue orders and journey times that did not match the activity log; we fixed them and added tests. "
+    "Documents are generated from the running app.",
     # Reflection 1-4
-    "Speed of the build-test loop. AI turned our Round 1 rules into working code with 22 automated tests in a few hours, and its "
-    "browser screenshots let us review layout, wording and both languages without clicking through every state ourselves. It also "
-    "generated many design options (11 themes, then 4 direction cards), so we chose from real screens instead of describing a look.",
-    "We rejected Mermaid's automatic C4 layout because labels overlapped, and had the diagrams laid out explicitly. We rejected the "
-    "first stale-data rule (a 30-minute threshold only) after screenshots showed false alarms, and replaced it with 'a missing event "
-    "counts only if the feed was read after the milestone'. We also declined AI's optional idea of an AI summary feature, and asked "
-    "for Vietnamese, which the first build did not have.",
-    "Keeping AI out of the product was a business judgment: our Round 1 case argued for explainable rules first, and adding AI late "
-    "would contradict it. Choosing a stack judges could run with one command, the visual direction, and decision rights (only the "
-    "shift lead may expedite; the promise can never be edited) were ours. So was what the demo is allowed to claim: no invented "
-    "customers or results, every number labelled as an assumption.",
-    "AI sometimes judged its own output as finished when the rendered screen still had overlaps or misleading markers, so we made "
-    "screenshot review mandatory. The local sandbox blocked some package installs, which shaped tool choices. AI also tends to make "
-    "plausible but unverified claims, so we checked every statement in the documents against the code and the running app.",
+    "In the build-and-check loop. AI turned our Round 1 rules into working code with tests within hours, and its "
+    "browser screenshots let us review every state in both languages without clicking through each one. It was also "
+    "useful as a second pair of eyes: the strict review found mismatches between our documents and the app that we "
+    "had stopped noticing.",
+    "We rejected automatically laid-out C4 diagrams because labels overlapped and lines crossed boxes; they are now "
+    "laid out by hand from the code structure. We rejected the first stale-data rule after it produced false alarms. "
+    "We declined an AI summary feature, and we changed AI's first KPI definitions, which made the demo look better "
+    "than an honest measure would (for example, counting false alarms as orders saved).",
+    "Keeping AI out of the product was a business decision: Round 1 asked Company A to fund explainable rules first. "
+    "Decision rights (only the shift lead may expedite), the promise that can never be edited, showing EUR 25 only as "
+    "a Round 1 assumption, and what the demo is allowed to claim were our calls. We also decided which review "
+    "findings to fix and which to leave.",
+    "AI sometimes declared work finished while the rendered screen still had overlaps or a misleading number, so "
+    "screenshot review became mandatory. It writes plausible but unverified claims, so we checked every sentence in "
+    "the documents against the code and the running app. Long sessions lose context, so we kept a short written "
+    "product brief that every session read first.",
 ]
 
 LOG_ROWS = [
-    ("Scoping", "Read the Round 2 brief and our Round 1 proposal; propose a narrow MVP scope and stack",
-     "3 h", "20 min", "Team chose the stack and that the product has no AI; scope checked against proposal sections 6-8",
-     "One DC, two rules, one journey; FastAPI + SQLite, server-rendered"),
-    ("Build", "Implement adapter, rules engine, escalation, workflow, KPI and demo harness with tests",
-     "2 days", "2.5 h", "22 automated tests incl. real-browser E2E; team ran the demo locally",
-     "Working MVP; stale-feed false-alarm bug found by screenshots and fixed"),
-    ("UI design", "Generate and compare UI options; redesign as a timetable; add English/Vietnamese",
-     "1.5 days", "3 h", "Team picked the direction (Timetable layout + Orienteering idea) and required Vietnamese; reviewed screens",
-     "Timetable UI with NOW line, bilingual, contrast and layout checks passed"),
-    ("Architecture docs", "Draft C4 context and component diagrams and the user journey from the running app",
-     "6 h", "1 h", "Rejected auto-layout with overlapping labels; checked every arrow is a real MVP interaction",
-     "System Diagram.pdf and User Journey.pdf, 2 pages each"),
-    ("Landing and journal", "Build the landing page with the taste-skill; draft this journal and the video script",
-     "5 h", "1.5 h", "Team reviews copy for claims, edits the journal and records the narration",
-     "Landing page at /, journal draft, scene-by-scene video script"),
+    ("Scoping", "Read the Round 2 brief and our Round 1 deck; propose a narrow MVP scope and stack",
+     "1 day", "3 h", "We chose the stack and 'no AI in the product'; scope checked against Round 1 slides 4-8",
+     "One DC, two rules, one journey; FastAPI + SQLite, server-rendered pages"),
+    ("Build", "Implement source adapter, rules, escalation, workflow, KPIs and demo harness, with tests",
+     "4 days", "1 day", "Every rule has a test; we ran the demo end to end and compared it with Round 1 slide 4",
+     "Working MVP; a stale-feed bug (9 false alarms) found in screenshots and fixed at the root"),
+    ("UI and language", "Generate UI options, build the timetable view, add English and Vietnamese",
+     "3 days", "1 day", "We picked the direction from real screens; a native speaker checked the Vietnamese",
+     "Timetable UI with a NOW line; both languages, including system messages"),
+    ("Documents", "Build the system diagram and the user journey from the running app",
+     "1.5 days", "4 h", "Rejected diagrams with overlapping labels; checked every arrow against the code",
+     "System Diagram.pdf and User Journey.pdf, 2 pages each, times taken from the app"),
+    ("Review and hardening", "Strict AI review of the whole submission, then fixes and a refactor",
+     "2 days", "5 h", "We triaged each finding, re-ran all 38 tests and the full demo",
+     "Overdue orders count as late; cost logging and Round 1 scorecard; code split into routes and read models"),
 ]
 
 DECISIONS = [
     ("Data freshness guard",
-     "First version: stop alerts only when the warehouse feed is older than 30 minutes.",
-     "Screenshots of a feed outage showed 9 false alarms at exactly 30 minutes. We asked for a root-cause fix: a missing event only "
-     "counts if the feed was read after the milestone. Added tests for both cases."),
+     "First version: pause alerts only when the warehouse feed is older than 30 minutes.",
+     "Screenshots of an outage showed 9 false alarms at minute 30. We asked for a root-cause rule: a missing event "
+     "only counts if the feed was read after the milestone. Tests cover both cases."),
+    ("Honest outcome measurement",
+     "The strict review showed Outcomes at 100% on time at 14:30 while SE-1077 was past its 14:00 promise and not delivered.",
+     "We changed the rule: an order past its promise without a delivery is overdue and counts as late. Percentages "
+     "from fewer than 10 cases are no longer marked on or below target."),
     ("AI inside the product",
-     "Recommended no AI in the core flow (consistent with Round 1); offered an optional human-approved AI case summary.",
-     "We kept the product rules-based and explainable, as argued in Round 1, and kept AI for engineering work only. No API keys in the demo."),
-    ("Visual direction",
-     "Produced 11 themes, then rolled 4 direction cards (Archipelago Timetable, Departure Board, Orienteering Course, category standard).",
-     "We combined the Timetable layout with the Orienteering course idea and asked for a Vietnamese option; AI rebuilt the UI to that brief."),
+     "Offered an optional AI case summary and an ML late-risk score.",
+     "We kept the product rules-only, as Round 1 argued, and made every closed exception a labelled example "
+     "(GET /api/outcomes) for the risk model planned after Gate 2."),
 ]
 
 
@@ -129,7 +136,10 @@ def fill_table(xml: str, index: int, rows: list[tuple[str, ...]]) -> str:
 
 
 def main() -> None:
-    root, out = Path(sys.argv[1]), Path(sys.argv[2])
+    template, out = Path(sys.argv[1]), Path(sys.argv[2])
+    root = Path(tempfile.mkdtemp(prefix="journal-"))
+    with zipfile.ZipFile(template) as z:
+        z.extractall(root)
     doc = root / "word" / "document.xml"
     xml = doc.read_text(encoding="utf8")
     xml = fill_sdts(xml)
@@ -145,6 +155,8 @@ def main() -> None:
             if f.is_file():
                 z.write(f, f.relative_to(root).as_posix())
     words = len(SDT_TEXT[2].split())
+    if words > 150:
+        raise SystemExit(f"AI strategy has {words} words; the template allows 150")
     print(out, "strategy words:", words)
 
 

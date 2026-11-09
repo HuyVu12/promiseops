@@ -1,4 +1,7 @@
-"""HTTP-level checks: pages render, actions redirect with feedback, API validates input."""
+"""HTTP-level checks: pages render, actions redirect with feedback, API validates input and access."""
+
+import re
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -7,10 +10,16 @@ from fastapi.testclient import TestClient
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     from promiseops.web import app as main
+    from promiseops.web import deps
 
-    monkeypatch.setattr(main, "DB_PATH", tmp_path / "api.db")
+    monkeypatch.setattr(deps.settings, "db_path", tmp_path / "api.db")
+    monkeypatch.setattr(deps.settings, "api_key", None)
     with TestClient(main.app) as c:
         yield c
+
+
+def now_utc(client) -> str:
+    return client.get("/api/health").json()["now"]
 
 
 def test_pages_render(client):
@@ -31,14 +40,45 @@ def test_full_journey_over_http(client):
     assert r.status_code == 303
 
     # Coordinator is blocked from expediting, with a helpful message.
-    r = client.post(f"/exceptions/{xid}/resolve", data={"resolution": "EXPEDITED", "note": "x"})
+    r = client.post(f"/exceptions/{xid}/resolve", data={"resolution": "EXPEDITED", "note": "x", "cost": "0"})
     assert "Escalate to the shift lead" in r.text
 
     client.post(f"/exceptions/{xid}/escalate", data={"note": "Not picked"})
     client.post("/role", data={"role": "shift_lead", "next": "/app"})
     r = client.post(f"/exceptions/{xid}/resolve", data={"resolution": "EXPEDITED", "note": "Priority pick"})
-    assert "Saved" in r.text
-    assert "Expedited by shift lead" in client.get(f"/exceptions/{xid}").text
+    assert "Log the intervention cost" in r.text
+    r = client.post(f"/exceptions/{xid}/resolve",
+                    data={"resolution": "EXPEDITED", "note": "Priority pick", "cost": "40"})
+    assert "Outcome recorded" in r.text
+    detail = client.get(f"/exceptions/{xid}").text
+    assert "Expedited by shift lead" in detail
+    assert "EUR 40" in detail
+
+
+def test_each_human_action_takes_one_simulated_minute(client):
+    client.post("/sim/advance", data={"minutes": 30, "next": "/app"})
+    xid = client.get("/api/exceptions").json()["open"][0]["id"]
+    assert now_utc(client).endswith("08:30:00Z")  # 09:30 in Stockholm
+    client.post(f"/exceptions/{xid}/ack")
+    assert now_utc(client).endswith("08:31:00Z")
+    # A refused action takes no time.
+    client.post(f"/exceptions/{xid}/note", data={"note": "  "})
+    assert now_utc(client).endswith("08:31:00Z")
+
+
+def test_queue_ties_go_to_b2b(client):
+    client.post("/sim/advance", data={"minutes": 30, "next": "/app"})
+    rows = client.get("/api/exceptions").json()["open"]
+    assert [r["order_id"] for r in rows] == ["SE-1042", "SE-1051"]  # same deadline; SE-1042 is B2B
+    assert rows[0]["customer_type"] == "B2B"
+
+
+def test_outcomes_page_shows_scorecard_and_overdue(client):
+    client.post("/sim/advance", data={"minutes": 330, "next": "/kpi"})  # 14:30
+    html = client.get("/kpi").text
+    assert "Pilot scorecard" in html
+    assert "1 overdue" in html
+    assert "Overdue, not delivered" in client.get("/orders").text
 
 
 def test_api_rejects_bad_event(client):
@@ -56,9 +96,37 @@ def test_api_accepts_event_and_is_idempotent(client):
     assert client.post("/api/events", json=body).json()["outcome"] == "duplicate"
 
 
+def test_api_key_is_enforced_when_configured(client, monkeypatch):
+    from promiseops.web import deps
+
+    monkeypatch.setattr(deps.settings, "api_key", "s3cret-for-test")
+    assert client.get("/api/exceptions").status_code == 401
+    assert client.get("/api/exceptions", headers={"X-API-Key": "wrong"}).status_code == 401
+    assert client.get("/api/exceptions", headers={"X-API-Key": "s3cret-for-test"}).status_code == 200
+    body = {"source": "wms", "event_id": "E3", "order_id": "SE-1042", "type": "PICK_CONFIRMED",
+            "occurred_at": "2026-11-10T07:55:00Z"}
+    assert client.post("/api/events", json=body).status_code == 401
+    assert client.get("/api/health").json()["auth"] == "api-key"
+
+
+def test_labelled_outcomes_endpoint(client):
+    client.post("/sim/advance", data={"minutes": 30, "next": "/app"})
+    rows = client.get("/api/outcomes").json()["rows"]
+    assert {r["order_id"] for r in rows} == {"SE-1042", "SE-1051"}
+    assert all("order_result" in r for r in rows)
+
+
+def test_unknown_page_renders_a_helpful_404(client):
+    r = client.get("/exceptions/99999")
+    assert r.status_code == 404
+    assert "Back to the exception queue" in r.text
+    assert client.get("/api/nope").status_code == 404
+
+
 def test_open_redirect_blocked(client):
-    r = client.post("/role", data={"role": "coordinator", "next": "//evil.example"}, follow_redirects=False)
-    assert r.headers["location"] == "/app"
+    for target in ("//evil.example", "https://evil.example", "/\\evil.example"):
+        r = client.post("/role", data={"role": "coordinator", "next": target}, follow_redirects=False)
+        assert r.headers["location"] == "/app", target
 
 
 def test_vietnamese_interface(client):
@@ -72,16 +140,38 @@ def test_vietnamese_interface(client):
     detail = client.get(f"/exceptions/{xid}").text
     assert "Chưa xác nhận lấy hàng trước 09:30; chuyến xuất lúc 10:00." in detail
     assert "Giao cho Anna Lind." in detail  # system audit note translated
+    assert "Bảng điểm pilot" in client.get("/kpi").text
     assert "Exception queue" in client.get("/app?lang=en").text
 
 
 def test_every_template_string_has_a_vietnamese_translation():
-    import re
-    from pathlib import Path
     from promiseops.web.i18n import VI
+
     missing = set()
     for f in (Path(__file__).resolve().parents[2] / "src/promiseops/web/templates").glob("*.html"):
         for s in re.findall(r"_\('([^']+)'", f.read_text(encoding="utf8")):
             if s not in VI:
                 missing.add(s)
     assert not missing, sorted(missing)
+
+
+def test_every_user_facing_error_has_a_vietnamese_translation():
+    from promiseops.web.i18n import VI
+
+    src = Path(__file__).resolve().parents[2] / "src/promiseops"
+    messages = set()
+    for f in [src / "core/workflow.py", src / "web/routes/actions.py", src / "web/routes/demo.py"]:
+        messages |= set(re.findall(r'(?:ActionError|done|msg=)\(?\s*"([^"{]+)"', f.read_text(encoding="utf8")))
+    messages |= {"Ownership taken", "Escalated to the shift lead", "Outcome recorded", "Note added"}
+    missing = sorted(m for m in messages if m not in VI and not m.startswith("Clock moved"))
+    assert not missing, missing
+
+
+def test_feed_outage_shows_a_live_banner_and_a_data_task(client):
+    client.post("/sim/advance", data={"minutes": 10, "next": "/app"})
+    client.post("/sim/feed", data={"action": "pause", "next": "/app"})
+    client.post("/sim/advance", data={"minutes": 45, "next": "/app"})
+    html = client.get("/app").text
+    assert "Fulfilment data is stale." in html
+    assert "No fulfilment data for 45 min" in html
+    assert "Integration desk" in client.get("/data").text

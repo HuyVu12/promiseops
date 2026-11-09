@@ -5,7 +5,7 @@
 <div class="page-head">
   <div>
     <h1>{{ _('Orders in scope') }}</h1>
-    <p class="lede">{{ _('{n} home deliveries with a timed promise across 12 stores, each drawn as its course. Read-only view of source data.', n=rows | length) }}</p>
+    <p class="lede">{{ _('{n} timed deliveries (B2B site and B2C home) across 12 stores, each drawn as its course. Read-only view of source data.', n=rows | length) }}</p>
   </div>
 </div>
 
@@ -23,8 +23,12 @@
       <div class="cell">
         {% if c.outcome %}
           <span class="outcome {{ 'ontime' if c.outcome == 'on time' else 'late' }}">{{ c.delivered }} {{ _(c.outcome) }}</span>
+        {% elif results[r.id] == 'overdue' %}
+          <span class="outcome late">{{ _('Overdue, not delivered') }}</span>
+        {% elif r.dispatched_at %}
+          <span class="muted">{{ _('en route') }}</span>
         {% else %}
-          <span class="muted">{{ _('en route') if r.dispatched_at else '-' }}</span>
+          <span class="muted">{{ _('at the DC') }}</span>
         {% endif %}
         <span class="sub">{{ _('Promise') }} {{ r.promised_at | local }}</span>
       </div>
@@ -32,7 +36,7 @@
       <div class="lane-cell">{{ course_lane(c, axis, now_pct, show_missed=False, show_outcome=False) }}</div>
       <div class="cell">
         {% for e in r.excs %}
-          <a href="/exceptions/{{ e.id }}" class="tag {{ 'esc' if e.status != 'RESOLVED' else 'done' }}">{{ _(EXCEPTION_TYPES[e.type]) }}</a>
+          <a href="/exceptions/{{ e.id }}" class="exc-link {{ 'open' if e.status != 'RESOLVED' }}">{{ _(EXCEPTION_TYPES[e.type]) }}<span class="sub">{% if e.status == 'RESOLVED' %}{{ _(RESOLUTION_SHORT[e.resolution]) }}{% else %}{{ _('Open') }}{% endif %}</span></a>
         {% endfor %}
       </div>
     </div>
