@@ -1,3 +1,450 @@
-<!DOCTYPE html>
-<html lang="{{ lang }}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>PromiseOps</title><link rel="stylesheet" href="/static/app.css"></head>
-<body style="display:block"><main class="page"><h1>PromiseOps</h1><p class="lede">{{ _('Exception queue') }}</p><p><a href="/app">/app</a></p></main></body></html>
+<!doctype html>
+<html lang="{{ lang }}" data-type="software" data-radius="soft" data-ground="sage" data-buttons="solid" data-motion>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{ _('PromiseOps: exception management for DC teams') }}</title>
+<meta name="description" content="{{ _('PromiseOps flags orders that may miss their original delivery promise and gives each case one owner, a response timer and a recorded outcome.') }}">
+<meta name="site-kind" content="software">
+<meta name="page-type" content="software">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400..500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/landing/assets/system.css">
+<link rel="stylesheet" href="/static/landing/assets/ui/cards.css">
+<link rel="stylesheet" href="/static/landing/assets/motion/motion.css">
+<link rel="stylesheet" href="/static/landing/assets/backgrounds/backgrounds.css">
+<link rel="stylesheet" href="/static/landing/assets/layout/layout.css">
+<style>
+:root {
+  --p-bg: #f5f6f3; --p-surface: #e8eae8; --p-ink: #13202b; --p-muted: #606971;
+  --p-accent: #0f3b5f; --p-accent-ink: #f5f6f3; --p-action: #0f3b5f; --p-action-ink: #f5f6f3;
+  --p-inv-bg: #13202b; --p-inv-surface: #202c37; --p-inv-ink: #f5f6f3; --p-inv-muted: #979da1;
+  --p-inv-accent: #f5f6f3; --p-inv-accent-ink: #13202b; --p-inv-action: #f5f6f3; --p-inv-action-ink: #13202b;
+  --font-display: "Geist", system-ui, sans-serif;
+  --font-text: "Geist", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --display-weight: 500;
+  --display-tracking: -0.035em;
+  --display-tracking-xl: -0.045em;
+}
+</style>
+<link rel="stylesheet" href="/static/landing/assets/ui/base.css">
+<script src="/static/landing/assets/backgrounds/backgrounds.js"></script>
+<script>document.documentElement.classList.add('mo-js');setTimeout(()=>document.documentElement.classList.add('mo-safe'),2500)</script>
+<link rel="modulepreload" href="/static/landing/assets/moments/moments.js">
+<link rel="modulepreload" href="/static/landing/assets/moments/lib.js">
+<link rel="modulepreload" href="/static/landing/assets/moments/word-highlight/moment.js">
+<link rel="stylesheet" href="/static/landing/landing.css">
+</head>
+<body>
+<!-- type: software (page type software, site-kind software)
+     deal: hero split (the live timetable window in the hero frame), nav nav-centre (nav-cards dealt, redealt: no photographs for its picture cards),
+     close close-type, footer footer-columns, rhythm space, buttons solid, mark wordmark, ground sage
+     palette: the client's own colours through start.mjs brand (paper #f5f6f3, ink #13202b, sea blue #0f3b5f); pairing geist
+     effect: grain-gradient in the hero frame (sea-blue field, data-fx-palette); safeguards panels: grain-gradient stills on the lit ground
+     moments: word-highlight in #promise (its own statement section)
+     course purple #a626aa and the NOW red #c0392b are the product's data colours, used only inside its UI. -->
+
+{% macro ctl(pos, cls='') %}<span class="pt-ctl {{ cls }}" style="left: {{ pos }}%"></span>{% endmacro %}
+{% macro leg(a, b, cls='') %}<span class="pt-leg {{ cls }}" style="left: {{ a }}%; width: {{ b - a }}%"></span>{% endmacro %}
+{% macro hours() %}{% for h in range(1, 7) %}<span class="pt-hour" style="left: {{ (h * 100 / 7)|round(2) }}%"></span>{% endfor %}{% endmacro %}
+{% macro axis() %}{% for h in range(0, 7) %}<span style="left: {{ (h * 100 / 7)|round(2) }}%">{{ '%02d' % (9 + h) }}:00</span>{% endfor %}{% endmacro %}
+
+<header class="nav nav--centre">
+  <div class="wrap nav__bar">
+    <a class="nav__logo" href="#top">PromiseOps</a>
+    <nav class="nav__links" aria-label="{{ _('Main') }}">
+      <div class="nav__item"><a class="nav__link" href="#queue">{{ _('Queue') }}</a></div>
+      <div class="nav__item"><a class="nav__link" href="#how">{{ _('Workflow') }}</a></div>
+      <div class="nav__item"><a class="nav__link" href="#safeguards">{{ _('Safeguards') }}</a></div>
+      <div class="nav__item"><a class="nav__link" href="#pilot">{{ _('Pilot') }}</a></div>
+    </nav>
+    <div class="nav__actions">
+      <form method="get" action="/" class="lang-form">
+        <label class="sr-only" for="lang-select">{{ _('Language') }}</label>
+        <select id="lang-select" name="lang" onchange="this.form.submit()" aria-label="{{ _('Language') }}">
+          {% for key, label in LANGS.items() %}<option value="{{ key }}" {{ 'selected' if key == lang }}>{{ 'EN' if key == 'en' else label }}</option>{% endfor %}
+        </select>
+        <noscript><button type="submit">OK</button></noscript>
+      </form>
+      <a class="btn btn--primary" href="/app">{{ _('Open the live demo') }}</a>
+    </div>
+    <button class="nav__toggle" type="button" aria-expanded="false" aria-label="{{ _('Menu') }}">
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 5h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero hero--split" aria-labelledby="hero-h">
+    <div class="wrap"><div class="hero-text grid hero__grid">
+      <div class="hero__text span-6">
+        <p class="hero__kicker">{{ _('Pilot proposal: 1 Swedish DC, 12 stores, 12 weeks') }}</p>
+        <h1 id="hero-h">{{ _('Exception management for DC teams') }}</h1>
+        <p class="hero__lead">{{ _('PromiseOps flags orders that may miss their original delivery promise, shows how long is left to act and gives each case one owner with a 15-minute response timer.') }}</p>
+        <div class="btn-row">
+          <a class="btn btn--primary" href="/app">{{ _('Open the live demo') }}<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a>
+          <a class="btn btn--secondary" href="#how">{{ _('See how it works') }}</a>
+        </div>
+      </div>
+      <div class="hero__media frame span-6 start-7" data-fx="grain-gradient" data-fx-seed="11" data-fx-palette='{"bg":"#0f3b5f","surface":"#1b5480","ink":"#f5f6f3","muted":"#8fb0c8","accent":"#3d7fae"}' data-visual>
+        <div class="stage stage--fade-b">
+          <div class="at-corner hero-win" style="--ax: 40px; --ay: 48px; --ay-sm: 24px">
+            <div class="ui pt pt-win" role="img" aria-label="{{ _('The PromiseOps exception queue at 10:00 with three open exceptions on a timetable') }}">
+              <div class="pt-bar"><span class="pt-bar__logo" aria-hidden="true"></span><span class="pt-bar__name">{{ _('Exception queue') }}</span><span class="pt-bar__sub">DC Stockholm South</span><span class="pt-bar__clock">10:00</span></div>
+              <div class="pt-board">
+                <div class="pt-head"><div>{{ _('Time left') }}</div><div>{{ _('Order') }}</div><div class="pt-axis">{{ axis() }}</div></div>
+                <div class="pt-band"><b>{{ _('Open exceptions') }}</b> 3</div>
+                <div class="pt-row is-hot">
+                  <div class="pt-left">{{ _('Due now') }}<span class="pt-meta">{{ _('act by') }} 10:00</span></div>
+                  <div><span class="pt-id">SE-1042</span><span class="pt-what">{{ _('Pick not confirmed') }}</span></div>
+                  <div class="pt-lane">{{ hours() }}{{ leg(7.14, 14.29, 'is-done') }}{{ leg(14.29, 71.43) }}{{ ctl(7.14, 'is-missed is-escalated') }}{{ ctl(14.29, 'is-missed') }}{{ ctl(35.71, 'is-limit') }}{{ ctl(71.43) }}<span class="pt-now" style="left: 14.29%"></span></div>
+                </div>
+                <div class="pt-row is-hot">
+                  <div class="pt-left">{{ _('30m left') }}<span class="pt-meta">{{ _('act by') }} 10:30</span></div>
+                  <div><span class="pt-id">SE-1060</span><span class="pt-what">{{ _('Pick not confirmed') }}</span></div>
+                  <div class="pt-lane">{{ hours() }}{{ leg(14.29, 85.71) }}{{ ctl(14.29, 'is-missed') }}{{ ctl(21.43) }}{{ ctl(42.86, 'is-limit') }}{{ ctl(85.71) }}<span class="pt-now" style="left: 14.29%"></span></div>
+                </div>
+                <div class="pt-row">
+                  <div class="pt-left">{{ _('1h 30m left') }}<span class="pt-meta">{{ _('act by') }} 11:30</span></div>
+                  <div><span class="pt-id">SE-1077</span><span class="pt-what">{{ _('Dispatch not confirmed') }}</span></div>
+                  <div class="pt-lane">{{ hours() }}{{ leg(7.14, 14.29, 'is-done') }}{{ leg(14.29, 71.43) }}{{ ctl(7.14, 'is-punched') }}{{ ctl(14.29, 'is-missed') }}{{ ctl(35.71, 'is-limit') }}{{ ctl(71.43) }}<span class="pt-now" style="left: 14.29%"></span></div>
+                </div>
+                <div class="pt-band"><b>{{ _('On course') }}</b> 13</div>
+                {% for id, a, b, c, d, nx in [('SE-1039', 14.29, 21.43, 42.86, 85.71, '10:30'), ('SE-1044', 14.29, 21.43, 42.86, 85.71, '10:30'), ('SE-1053', 21.43, 28.57, 57.14, 99.2, '10:30'), ('SE-1056', 21.43, 28.57, 57.14, 99.2, '10:30'), ('SE-1031', 7.14, 14.29, 35.71, 71.43, '14:00'), ('SE-1033', 7.14, 14.29, 35.71, 71.43, '14:00')] %}
+                <div class="pt-row is-quiet">
+                  <div class="pt-next">{{ _('next') }} {{ nx }}</div>
+                  <div><span class="pt-id">{{ id }}</span></div>
+                  <div class="pt-lane">{{ hours() }}{{ leg(a, d) }}{{ ctl(a, 'is-punched' if a < 14.3 else '') }}{{ ctl(b, 'is-punched' if b < 14.3 else '') }}{{ ctl(c, 'is-limit') }}{{ ctl(d) }}<span class="pt-now" style="left: 14.29%"></span></div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ly-float">
+          <div class="ly-float__row"><span class="ly-live">{{ _('Escalated to shift lead') }}</span><span>09:50</span></div>
+          <div class="ly-float__title">{{ _('SE-1042 moved from Anna Lind to Erik Berg') }}</div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <section class="section" id="queue" aria-labelledby="queue-h">
+    <div class="wrap">
+      <div class="grid">
+        <h2 id="queue-h" class="span-6">{{ _('The exception queue, ordered by time left') }}</h2>
+        <div class="span-6 start-7 stack-4">
+          <p>{{ _('Each order is a course of four controls against its promise. When the red now line passes a control without confirmation, a case opens with an owner.') }}</p>
+          <a class="link" href="/orders">{{ _('See all orders in the demo') }}</a>
+        </div>
+      </div>
+      <div class="ui app fill pt" role="img" aria-label="{{ _('The exception queue beside the open case SE-1042') }}">
+        <div class="app__pane app__pane--list">
+          <div class="pt-tabs"><h3>{{ _('Exception queue') }}</h3><span class="pt-tab is-on">{{ _('All open') }} 3</span><span class="pt-tab">{{ _('Assigned to me') }} 2</span></div>
+          <ul class="pt-list">
+            <li class="is-hot is-open"><div class="pt-left">{{ _('Due now') }}<span class="pt-meta">{{ _('act by') }} 10:00</span></div><div><span class="pt-id">SE-1042</span><span class="pt-tag">B2C</span><span class="pt-what">S04 Nacka · {{ _('Pick not confirmed') }}</span></div><div class="pt-own">Erik Berg<span class="pt-chip">{{ _('Escalated') }}</span><small>{{ _('respond within 5 min') }}</small></div></li>
+            <li class="is-hot"><div class="pt-left">{{ _('30m left') }}<span class="pt-meta">{{ _('act by') }} 10:30</span></div><div><span class="pt-id">SE-1060</span><span class="pt-tag">B2C</span><span class="pt-what">S02 Kungsholmen · {{ _('Pick not confirmed') }}</span></div><div class="pt-own">Anna Lind<small>{{ _('respond within 15 min') }}</small></div></li>
+            <li><div class="pt-left">{{ _('1h 30m left') }}<span class="pt-meta">{{ _('act by') }} 11:30</span></div><div><span class="pt-id">SE-1077</span><span class="pt-tag">B2B</span><span class="pt-what">S11 Bromma · {{ _('Dispatch not confirmed') }}</span></div><div class="pt-own">Anna Lind<small>{{ _('respond within 15 min') }}</small></div></li>
+            <li class="pt-band"><b>{{ _('On course') }}</b> 13</li>
+            {% for id, store, tag, nxt in [('SE-1039', 'S06 Täby', 'B2C', 'Cutoff 10:30'), ('SE-1044', 'S08 Haninge', 'B2B', 'Cutoff 10:30'), ('SE-1047', 'S09 Lidingö', 'B2C', 'Cutoff 10:30'), ('SE-1053', 'S10 Sollentuna', 'B2C', 'Pick 10:30'), ('SE-1056', 'S12 Farsta', 'B2B', 'Pick 10:30'), ('SE-1058', 'S02 Kungsholmen', 'B2C', 'Pick 10:30'), ('SE-1031', 'S01 Södermalm', 'B2C', 'Promise 14:00')] %}
+            <li><div class="pt-next">{{ _('next') }} {{ _(nxt.split(' ')[0]) }} {{ nxt.split(' ')[1] }}</div><div><span class="pt-id">{{ id }}</span><span class="pt-tag">{{ tag }}</span><span class="pt-what">{{ store }}</span></div><div></div></li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="app__pane app__pane--open">
+          <div class="pt-open">
+            <div class="pt-open__head">
+              <div><h3>SE-1042 · {{ _('Pick not confirmed') }}</h3><p>{{ _('No pick confirmation by 09:30; route dispatches at 10:00.') }}</p></div>
+              <div class="pt-due"><small>{{ _('Act before') }} 10:00</small><b>{{ _('Due now') }}</b></div>
+            </div>
+            <div class="pt-card">
+              <p class="pt-h">{{ _('The course against the original promise') }}</p>
+              <div class="pt-big">
+                <div class="pt-axis">{% for h in range(0, 6) %}<span style="left: {{ (h * 100 / 6)|round(2) }}%">{{ '%02d' % (9 + h) }}:00</span>{% endfor %}</div>
+                <div class="pt-lane">
+                  {% for h in range(1, 6) %}<span class="pt-hour" style="left: {{ (h * 100 / 6)|round(2) }}%"></span>{% endfor %}
+                  {{ leg(8.33, 16.67, 'is-done') }}{{ leg(16.67, 83.33) }}
+                  {{ ctl(8.33, 'is-missed is-escalated') }}{{ ctl(16.67, 'is-missed') }}{{ ctl(41.67, 'is-limit') }}{{ ctl(83.33) }}
+                  <span class="pt-now" style="left: 16.67%"></span>
+                  <span class="pt-lbl is-down is-missed" style="left: 8.33%"><b>09:30</b>{{ _('Pick') }}<br><em>{{ _('not confirmed') }}</em></span>
+                  <span class="pt-lbl is-up is-missed is-left" style="left: 16.67%"><b>10:00</b>{{ _('Cutoff') }}<br><em>{{ _('not confirmed') }}</em></span>
+                  <span class="pt-lbl is-down" style="left: 41.67%"><b>11:30</b>{{ _('Last viable') }}</span>
+                  <span class="pt-lbl is-up" style="left: 83.33%"><b>14:00</b>{{ _('Promise') }}<br>{{ _('pending') }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="pt-cols">
+              <div class="pt-card">
+                <p class="pt-h">{{ _('Activity log') }}</p>
+                <ul class="pt-log">
+                  <li><time>09:30</time><span class="is-new">{{ _('Created') }}</span><span>{{ _('No pick confirmation by 09:30. Assigned to Anna Lind.') }}</span></li>
+                  <li><time>09:50</time><span class="is-esc">{{ _('Escalated') }}</span><span>{{ _('Not acknowledged within 15 min. Moved from Anna Lind to Erik Berg.') }}</span></li>
+                  <li><time>09:58</time><span>{{ _('Note') }}</span><span>{{ _('Erik Berg: picker reassigned, aisle 14.') }}</span></li>
+                </ul>
+              </div>
+              <div class="pt-card">
+                <p class="pt-h">{{ _('Your action as Erik Berg') }}</p>
+                <div class="pt-opt"><i></i>{{ _('Verified on floor - alert was wrong') }}</div>
+                <div class="pt-opt is-on"><i></i>{{ _('Expedited by shift lead') }}</div>
+                <div class="pt-field-l">{{ _('Evidence and reason') }}</div>
+                <div class="pt-field">{{ _('Picked by a second picker, loads on the 10:00 route.') }}</div>
+                <div class="pt-btn">{{ _('Record outcome') }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="how" aria-labelledby="how-h">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="how-h">{{ _('From alert to outcome in 3 steps.') }} <span class="muted">{{ _('People decide, the system records.') }}</span></h2>
+      </div>
+      <div class="grid">
+        <article class="card card--row card--open span-4 m-nolift">
+          <span class="step-num">1</span>
+          <h3>{{ _('Flags orders before the promise slips') }}</h3>
+          <p>{{ _('Two rules: pick not confirmed by the pick milestone, or dispatch not confirmed by the cutoff.') }}</p>
+          <div class="panel">
+            <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max: 340px; --ax: max(24px, 50% - 170px); --ay: 40px; --ay-sm: 24px">
+              <div class="ui pt frag" style="--fw: 100%">
+                <div class="frag__bar"><b>SE-1042</b><span>{{ _('Due now') }}</span></div>
+                <div class="frag__body">
+                  <div class="pt-lane">{{ hours() }}{{ leg(7.14, 71.43) }}{{ ctl(7.14, 'is-missed') }}{{ ctl(14.29) }}{{ ctl(35.71, 'is-limit') }}{{ ctl(71.43) }}<span class="pt-now" style="left: 10%"></span><span class="pt-miss" style="left: 7.14%; transform: translateX(-8px)">{{ _('Pick') }} 09:30</span></div>
+                  <div class="frag-kv"><dt>{{ _('Rule') }}</dt><dd><span class="frag-rule">{{ _('Pick not confirmed') }}</span></dd><dt>{{ _('Milestone') }}</dt><dd>{{ _('Pick') }} 09:30</dd><dt>{{ _('Time left') }}</dt><dd>{{ _('30 min to the 10:00 route') }}</dd></div>
+                </div>
+              </div>
+            </div></div>
+          </div>
+        </article>
+        <article class="card card--row card--open span-4 m-nolift">
+          <span class="step-num">2</span>
+          <h3>{{ _('Gives every case one owner') }}</h3>
+          <p>{{ _('The coordinator has 15 minutes to respond. Then the case moves to the shift lead on its own.') }}</p>
+          <div class="panel">
+            <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max: 340px; --ax: max(24px, 50% - 170px); --ay: 40px; --ay-sm: 24px">
+              <div class="ui pt frag" style="--fw: 100%">
+                <div class="frag__bar"><b>{{ _('Owner') }}</b><span>SE-1060</span></div>
+                <div class="frag__body">
+                  <div class="frag-row"><span class="frag-who"><span class="frag-av" aria-hidden="true">AL</span><span>Anna Lind<small>{{ _('DC coordinator') }}</small></span></span><span>10:05</span></div>
+                  <div class="frag-timer"><i></i></div>
+                  <div class="frag-note">{{ _('Respond within 15 min, or the case moves to the shift lead.') }}</div>
+                  <div class="frag-row"><span class="frag-who"><span class="frag-av" aria-hidden="true">EB</span><span>Erik Berg<small>{{ _('Shift lead') }}</small></span></span><span class="frag-note">{{ _('next in line') }}</span></div>
+                </div>
+              </div>
+            </div></div>
+          </div>
+        </article>
+        <article class="card card--row card--open span-4 m-nolift">
+          <span class="step-num">3</span>
+          <h3>{{ _('Records each outcome with evidence') }}</h3>
+          <p>{{ _('No case closes without a written reason, and the outcome is measured against the original promise.') }}</p>
+          <div class="panel">
+            <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max: 340px; --ax: max(24px, 50% - 170px); --ay: 40px; --ay-sm: 24px">
+              <div class="ui pt frag" style="--fw: 100%">
+                <div class="frag__bar"><b>{{ _('Record outcome') }}</b><span>SE-1077</span></div>
+                <div class="frag__body">
+                  <div class="pt-opt is-on" style="margin: 0"><i></i>{{ _('Verified on floor - alert was wrong') }}</div>
+                  <div class="pt-field-l" style="margin: 0">{{ _('Evidence and reason') }}</div>
+                  <div class="pt-field">{{ _('Called the dock: SE-1077 is on the pallet, scanner was offline.') }}</div>
+                  <div class="pt-btn" style="margin: 0">{{ _('Record outcome') }}</div>
+                </div>
+              </div>
+            </div></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="promise" aria-labelledby="promise-h" data-moment="word-highlight">
+    <div class="wrap">
+      <div class="grid">
+        <div class="span-6">
+          <h2 id="promise-h" class="mo-wh__text">{{ _('Outcomes count against the') }} <strong>{{ _('original promise') }}</strong>{{ _(', which nobody can edit.') }}</h2>
+        </div>
+        <div class="span-6 start-7 rec-col" data-visual>
+          <div class="ui pt pt-win rec" role="img" aria-label="{{ _('The closed record of SE-1042: promised 14:00, delivered 12:30, on time') }}">
+            <div class="pt-bar"><span class="pt-bar__logo" aria-hidden="true"></span><span class="pt-bar__name">SE-1042</span><span class="pt-bar__sub">{{ _('Closed') }} · {{ _('Expedited by shift lead') }}</span></div>
+            <div class="pt-open">
+              <div class="rec-kv">
+                <div><small>{{ _('Original promise') }}</small><b>14:00</b><span class="rec-lock"><svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.5" width="8" height="5.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>{{ _('locked when the order was placed') }}</span></div>
+                <div><small>{{ _('Delivered') }}</small><b>12:30</b></div>
+                <div><small>{{ _('Result') }}</small><b class="is-ok">{{ _('On time') }}</b></div>
+              </div>
+              <div class="pt-card">
+                <p class="pt-h">{{ _('The course against the original promise') }}</p>
+                <div class="pt-big">
+                  <div class="pt-axis">{% for h in range(0, 6) %}<span style="left: {{ (h * 100 / 6)|round(2) }}%">{{ '%02d' % (9 + h) }}:00</span>{% endfor %}</div>
+                  <div class="pt-lane">
+                    {% for h in range(1, 6) %}<span class="pt-hour" style="left: {{ (h * 100 / 6)|round(2) }}%"></span>{% endfor %}
+                    {{ leg(8.33, 83.33, 'is-done') }}
+                    {{ ctl(8.33, 'is-missed is-escalated') }}{{ ctl(16.67, 'is-punched') }}{{ ctl(41.67, 'is-punched') }}{{ ctl(63.89, 'is-punched') }}
+                    <span class="pt-ctl" style="left: 83.33%"></span>
+                    <span class="pt-lbl is-down is-missed" style="left: 8.33%"><b>09:30</b><em>{{ _('missed') }}</em></span>
+                    <span class="pt-lbl is-up" style="left: 16.67%"><b>10:00</b>{{ _('Dispatched') }}</span>
+                    <span class="pt-lbl is-down" style="left: 58.33%"><b>12:30</b>{{ _('Delivered') }}</span>
+                    <span class="pt-lbl is-up" style="left: 83.33%"><b>14:00</b>{{ _('Promise') }}</span>
+                  </div>
+                </div>
+              </div>
+              <ul class="pt-log">
+                <li><time>09:30</time><span class="is-new">{{ _('Created') }}</span><span>{{ _('No pick confirmation by 09:30. Assigned to Anna Lind.') }}</span></li>
+                <li><time>09:50</time><span class="is-esc">{{ _('Escalated') }}</span><span>{{ _('Not acknowledged within 15 min. Moved from Anna Lind to Erik Berg.') }}</span></li>
+                <li><time>09:52</time><span>{{ _('Expedited') }}</span><span>{{ _('Erik Berg: picked by a second picker, loads on the 10:00 route.') }}</span></li>
+                <li><time>12:30</time><span>{{ _('Delivered') }}</span><span>{{ _('Delivered 1 h 30 min before the original promise.') }}</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section g2" id="safeguards" aria-labelledby="safeguards-h">
+    <div class="wrap">
+      <div class="group">
+        <div class="section-head">
+          <h2 id="safeguards-h">{{ _('Four safeguards in the product.') }} <span class="muted">{{ _('Built so a quiet queue means what it says.') }}</span></h2>
+        </div>
+        <div class="grid">
+          <article class="card card--row card--open span-6 m-nolift">
+            <h3>{{ _('Pauses alerts when data is stale') }}</h3>
+            <p>{{ _('When the warehouse feed is older than 30 minutes, alerts stop and the queue says why. Silence from a stale feed proves nothing.') }}</p>
+            <div class="panel" data-fx="grain-gradient" data-fx-seed="31" data-fx-params='{"drift":0}'>
+              <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max: 420px; --ax: max(24px, 50% - 210px); --ay: 48px; --ay-sm: 24px">
+                <div class="ui pt frag" style="--fw: 100%">
+                  <div class="frag__bar"><b>{{ _('Source feeds') }}</b><span>10:40</span></div>
+                  <div class="frag__body">
+                    <div class="frag-feed"><span class="frag-dot" aria-hidden="true"></span><span>{{ _('Order management') }}<small>{{ _('updated 1 min ago') }}</small></span></div>
+                    <div class="frag-feed"><span class="frag-dot is-red" aria-hidden="true"></span><span>{{ _('Warehouse fulfilment') }}<small>{{ _('updated 34 min ago') }}</small></span></div>
+                    <div class="frag-alert"><span><b>{{ _('Alerts paused') }}</b>{{ _('Fulfilment data is 34 min old. New exceptions wait until the feed is back.') }}</span></div>
+                  </div>
+                </div>
+              </div></div>
+            </div>
+          </article>
+          <article class="card card--row card--open span-6 m-nolift">
+            <h3>{{ _('Reads your systems and never writes back') }}</h3>
+            <p>{{ _('PromiseOps reads order and warehouse events from the systems you already run. It changes nothing in them.') }}</p>
+            <div class="panel" data-fx="grain-gradient" data-fx-seed="47" data-fx-params='{"drift":0}'>
+              <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max: 440px; --ax: max(24px, 50% - 220px); --ay: 56px; --ay-sm: 24px">
+                <div class="ui pt frag" style="--fw: 100%">
+                  <div class="frag__bar"><b>{{ _('Data flow') }}</b><span>{{ _('read only') }}</span></div>
+                  <div class="frag__body">
+                    <div class="frag-src">
+                      <div class="frag-src__col">
+                        <div class="frag-box">{{ _('Order management') }}<small>{{ _('orders, promises') }}</small></div>
+                        <div class="frag-box">{{ _('Warehouse fulfilment') }}<small>{{ _('pick and dispatch events') }}</small></div>
+                      </div>
+                      <div class="frag-lines" aria-hidden="true"><svg viewBox="0 0 54 100" preserveAspectRatio="none"><path d="M0 26 C 27 26, 27 50, 54 50 M0 74 C 27 74, 27 50, 54 50" fill="none" stroke="#0f3b5f" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg></div>
+                      <div class="frag-box is-main"><b>PromiseOps</b><small>{{ _('rules, owners, outcomes') }}</small></div>
+                    </div>
+                    <div class="frag-note">{{ _('No write access is requested in either system.') }}</div>
+                  </div>
+                </div>
+              </div></div>
+            </div>
+          </article>
+        </div>
+      </div>
+      <div class="grid">
+        <article class="card card--row card--open span-6 m-nolift">
+          <h3>{{ _('Leaves every expedite to the shift lead') }}</h3>
+          <p>{{ _('A coordinator can verify a false alarm or hand the order to customer service. Only the shift lead can approve an expedite.') }}</p>
+          <div class="panel" data-fx="grain-gradient" data-fx-seed="58" data-fx-params='{"drift":0}'>
+            <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max: 420px; --ax: max(24px, 50% - 210px); --ay: 48px; --ay-sm: 24px">
+              <div class="ui pt frag" style="--fw: 100%">
+                <div class="frag__bar"><b>{{ _('Your action as Anna Lind') }}</b><span>SE-1060</span></div>
+                <div class="frag__body">
+                  <div class="pt-opt" style="margin: 0"><i></i>{{ _('Verified on floor - alert was wrong') }}</div>
+                  <div class="pt-opt is-off" style="margin: 0"><i></i><span>{{ _('Expedited by shift lead') }}<small>{{ _('Shift lead decision') }}</small></span></div>
+                  <div class="pt-opt" style="margin: 0"><i></i>{{ _('Promise at risk - handed to customer service') }}</div>
+                </div>
+              </div>
+            </div></div>
+          </div>
+        </article>
+        <article class="card card--row card--open span-6 m-nolift">
+          <h3>{{ _('Explains every alert with a plain rule') }}</h3>
+          <p>{{ _('No AI and no risk score. Each alert names its rule, the milestone and when it was missed.') }}</p>
+          <div class="panel" data-fx="grain-gradient" data-fx-seed="64" data-fx-params='{"drift":0}'>
+            <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max: 420px; --ax: max(24px, 50% - 210px); --ay: 48px; --ay-sm: 24px">
+              <div class="ui pt frag" style="--fw: 100%">
+                <div class="frag__bar"><b>{{ _('Why this alert') }}</b><span>SE-1077</span></div>
+                <div class="frag__body">
+                  <div class="frag-kv">
+                    <dt>{{ _('Rule') }}</dt><dd><span class="frag-rule">{{ _('Dispatch not confirmed') }}</span></dd>
+                    <dt>{{ _('Milestone') }}</dt><dd>{{ _('Cutoff') }} 10:00</dd>
+                    <dt>{{ _('Last event') }}</dt><dd>{{ _('Picked') }} 09:24</dd>
+                    <dt>{{ _('Read at') }}</dt><dd>10:00, {{ _('feed 1 min old') }}</dd>
+                  </div>
+                  <div class="frag-note">{{ _('No dispatch confirmation by the 10:00 cutoff.') }}</div>
+                </div>
+              </div>
+            </div></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="pilot" aria-labelledby="pilot-h">
+    <div class="wrap">
+      <div class="grid">
+        <div class="span-6 stack-5">
+          <h2 id="pilot-h">{{ _('A 12-week pilot at one Swedish DC') }}</h2>
+          <p class="t-lead">{{ _('We propose one distribution centre and 12 stores in Sweden for Company A, a Nordic retailer with stores in Denmark, Norway and Sweden.') }}</p>
+          <p>{{ _('Illustrative planning assumptions from our Round 1 business case, not measured results.') }}</p>
+        </div>
+        <ul class="rows span-6 start-7">
+          <li><span class="rows__name">{{ _('Orders a month') }}<small>{{ _('Assumed base case') }}</small></span><span class="rows__value">100,000</span></li>
+          <li><span class="rows__name">{{ _('Orders late today') }}<small>{{ _('Assumed share of all orders') }}</small></span><span class="rows__value">10%</span></li>
+          <li><span class="rows__name">{{ _('Fewer late orders') }}<small>{{ _('Assumed relative reduction') }}</small></span><span class="rows__value">15%</span></li>
+          <li><span class="rows__name">{{ _('Net avoided cost per late order') }}<small>{{ _('Assumed') }}</small></span><span class="rows__value">EUR 25</span></li>
+          <li><span class="rows__name">{{ _('One-off cost') }}<small>{{ _('Assumed') }}</small></span><span class="rows__value">EUR 180,000</span></li>
+          <li><span class="rows__name">{{ _('Running cost') }}<small>{{ _('Assumed, per month') }}</small></span><span class="rows__value">EUR 8,000</span></li>
+          <li><span class="rows__name">{{ _('Payback') }}<small>{{ _('After steady state, on these assumptions') }}</small></span><span class="rows__value">{{ _('about 6 months') }}</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer closing" id="contact" aria-labelledby="close-h">
+  <div class="wrap">
+    <div class="closing__cta close--type">
+      <div class="section-head">
+        <h2 id="close-h">{{ _('Work one case in the live demo') }}</h2>
+        <p class="t-small muted">{{ _('No sign-in. Fictional data from one Stockholm DC, with a clock you can move forward.') }}</p>
+      </div>
+      <a class="btn btn--primary btn--xl btn--wide" href="/app">{{ _('Open the live demo') }}<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a>
+    </div>
+    <div class="closing__links">
+      <div class="grid">
+        <div class="span-4 stack-4">
+          <a class="nav__logo" href="#top">PromiseOps</a>
+          <p class="footer__lede">{{ _('Keeps the original delivery promise.') }}</p>
+        </div>
+        <div class="span-2 footer__col"><h4>{{ _('Queue') }}</h4><ul><li><a href="/orders">{{ _('Orders') }}</a></li><li><a href="/kpi">{{ _('Outcomes') }}</a></li></ul></div>
+        <div class="span-2 footer__col"><h4>{{ _('Workflow') }}</h4><ul><li><a href="#how">{{ _('Steps') }}</a></li><li><a href="#promise">{{ _('Promise') }}</a></li></ul></div>
+        <div class="span-2 footer__col"><h4>{{ _('Safeguards') }}</h4><ul><li><a href="/data">{{ _('Data health') }}</a></li></ul></div>
+        <div class="span-2 footer__col"><h4>{{ _('Pilot') }}</h4><ul><li><a href="#pilot">{{ _('Business case') }}</a></li></ul></div>
+      </div>
+      <div class="footer__legal">
+        <span>&copy; 2026 NgaChainAILayer2 &nbsp; {{ _('All company, people and order data on this site is fictional.') }}</span>
+        <div class="socials"></div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="/static/landing/assets/system.js"></script>
+<script type="module" src="/static/landing/assets/motion/motion.js"></script>
+<script type="module" src="/static/landing/assets/layout/layout.js"></script>
+</body>
+</html>
