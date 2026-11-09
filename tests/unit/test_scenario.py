@@ -289,3 +289,51 @@ def test_system_sentences_are_translated():
 
     assert i18n.translate("Intervention cost logged: EUR 10.", "vi") == "Đã ghi chi phí can thiệp: EUR 10."
     assert i18n.translate("Took ownership 2 min after the alert.", "vi") == "Nhận xử lý 2 phút sau cảnh báo."
+
+
+# ---------- A false alarm never silences an order ----------
+
+def test_pick_still_missing_after_a_false_alarm_comes_back(conn):
+    conn.execute("DELETE FROM sim_feed WHERE order_id = 'SE-1042'")  # the pick really never happens
+    conn.commit()
+    advance_to(conn, "09:30")
+    x = exc(conn, "SE-1042", "MISSING_PICK")
+    workflow.resolve(conn, x["id"], "coordinator", "FALSE_ALARM", "Scanner lag, I think", at("09:30"))
+    advance_to(conn, "09:55")
+    assert exc(conn, "SE-1042", "PICK_STILL_MISSING") is None  # not before the route leaves
+    advance_to(conn, "10:05")
+    back = exc(conn, "SE-1042", "PICK_STILL_MISSING")
+    assert back is not None and back["status"] == "OPEN"
+    assert back["intervention_deadline"] == tu.iso(at("11:30"))  # last viable dispatch
+    assert "Closed as a false alarm" in back["reason"]
+
+
+def test_real_false_alarm_does_not_come_back(conn):
+    # SE-1051: picked at 09:20, the handheld synced at 09:55. The verdict was right; no follow-up.
+    advance_to(conn, "09:30")
+    x = exc(conn, "SE-1051", "MISSING_PICK")
+    workflow.resolve(conn, x["id"], "coordinator", "FALSE_ALARM", "Picker confirms tote packed 09:20", at("09:30"))
+    advance_to(conn, "15:00")
+    assert exc(conn, "SE-1051", "PICK_STILL_MISSING") is None
+
+
+def test_dispatch_still_missing_after_a_false_alarm_comes_back(conn):
+    conn.execute("DELETE FROM sim_feed WHERE order_id = 'SE-1077' AND type != 'PICK_CONFIRMED'")
+    conn.commit()
+    advance_to(conn, "10:05")
+    x = exc(conn, "SE-1077", "MISSING_DISPATCH")
+    workflow.resolve(conn, x["id"], "coordinator", "FALSE_ALARM", "Driver says it left", at("10:05"))
+    advance_to(conn, "11:25")
+    assert exc(conn, "SE-1077", "DISPATCH_STILL_MISSING") is None
+    advance_to(conn, "11:35")
+    back = exc(conn, "SE-1077", "DISPATCH_STILL_MISSING")
+    assert back is not None and back["intervention_deadline"] == tu.iso(at("14:00"))
+
+
+def test_demo_feed_carries_a_resent_order_and_a_rejected_record(conn):
+    advance_to(conn, "09:10")
+    log = {(r["ref"], r["outcome"]) for r in conn.execute("SELECT ref, outcome FROM ingest_log")}
+    assert ("SE-1042", "duplicate") in log
+    assert any(o == "rejected" and "PICKED" in ref for ref, o in log)
+    o = conn.execute("SELECT promised_at FROM orders WHERE id = 'SE-1042'").fetchone()
+    assert o["promised_at"] == tu.iso(at("14:00"))

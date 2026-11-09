@@ -26,7 +26,7 @@
   <div class="stat" data-testid="kpi-prevented">
     <span class="stat-label">{{ _('Late deliveries prevented') }}</span>
     <span class="stat-value">{{ k.prevented }}</span>
-    <span class="stat-sub">{% if k.prevented %}{{ _('Expedited and still on time') }}: {{ k.prevented_ids | join(', ') }}{% elif k.expedited %}{{ _('{n} expedited, result not known yet', n=k.expedited - k.expedite_decided) if k.expedite_decided < k.expedited else _('Expedited orders missed the promise') }}{% else %}{{ _('No intervention recorded yet') }}{% endif %}</span>
+    <span class="stat-sub">{% if k.prevented %}{{ _('Expedited and still on time') }}: {{ k.prevented_ids | join(', ') }} · {{ _('the causal effect is proven only against control stores') }}{% elif k.expedited %}{{ _('{n} expedited, result not known yet', n=k.expedited - k.expedite_decided) if k.expedite_decided < k.expedited else _('Expedited orders missed the promise') }}{% else %}{{ _('No intervention recorded yet') }}{% endif %}</span>
   </div>
   <div class="stat" data-testid="kpi-ack">
     <span class="stat-label">{{ _('Owned within {n} min', n=CFG.ack_sla_min) }}</span>

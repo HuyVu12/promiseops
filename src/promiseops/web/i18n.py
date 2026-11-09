@@ -99,6 +99,8 @@ VI: dict[str, str] = {
     # Exception types / outcomes / roles
     "Pick not confirmed": "Chưa xác nhận lấy hàng",
     "Dispatch not confirmed": "Chưa xác nhận xuất hàng",
+    "Pick still missing after a false alarm": "Vẫn chưa lấy hàng sau khi đóng là báo sai",
+    "Dispatch still missing after a false alarm": "Vẫn chưa xuất hàng sau khi đóng là báo sai",
     "Verified on floor - alert was wrong": "Đã kiểm tra tại kho - cảnh báo sai",
     "Expedited by shift lead": "Trưởng ca cho xử lý gấp",
     "Promise at risk - handed to customer service": "Có nguy cơ trễ - chuyển chăm sóc khách hàng",
@@ -386,6 +388,7 @@ VI: dict[str, str] = {
     "{n} still before their promise": "{n} đơn chưa tới giờ cam kết",
     "Late deliveries prevented": "Số đơn trễ đã ngăn được",
     "Expedited and still on time": "Xử lý gấp và vẫn đúng hạn",
+    "the causal effect is proven only against control stores": "hiệu quả nhân quả chỉ chứng minh được khi so với cửa hàng đối chứng",
     "{n} expedited, result not known yet": "{n} đơn đã xử lý gấp, chưa biết kết quả",
     "Expedited orders missed the promise": "Các đơn xử lý gấp vẫn trễ cam kết",
     "No intervention recorded yet": "Chưa ghi nhận lần can thiệp nào",
@@ -455,6 +458,12 @@ PATTERNS: list[tuple[re.Pattern, str]] = [
     (re.compile(r"^Picked but not dispatched by (\S+); last dispatch that keeps the promise is (\S+)\.$"),
      r"Đã lấy hàng nhưng chưa xuất trước \1; lần xuất muộn nhất còn giữ được cam kết là \2."),
     (re.compile(r"^(No pick confirmation .*?\.) Assigned to (.+)\.$"), None),
+    (re.compile(r"^Closed as a false alarm, but still no pick confirmation at the (\S+) cutoff; last dispatch that keeps the promise is (\S+)\.$"),
+     r"Đã đóng là báo sai, nhưng đến mốc chốt \1 vẫn chưa xác nhận lấy hàng; lần xuất muộn nhất còn giữ được cam kết là \2."),
+    (re.compile(r"^Closed as a false alarm, but still not dispatched by (\S+); the promise of (\S+) is at risk\.$"),
+     r"Đã đóng là báo sai, nhưng đến \1 vẫn chưa xuất hàng; cam kết \2 đang có nguy cơ trễ."),
+    (re.compile(r"^No fulfilment data received yet\. Missing-event alerts paused to avoid false alarms\.$"),
+     "Chưa nhận được dữ liệu kho. Tạm dừng cảnh báo thiếu sự kiện để tránh báo sai."),
     (re.compile(r"^Took ownership (\d+) min after the alert\.$"), r"Nhận xử lý \1 phút sau cảnh báo."),
     (re.compile(r"^Not acknowledged within (\d+) min\. Moved from (.+) to (.+)\.$"),
      r"Không có phản hồi trong \1 phút. Chuyển từ \2 sang \3."),
@@ -497,7 +506,8 @@ def translate(text: str | None, lang: str, **params) -> str:
     if lang == "vi":
         if text in VI:
             out = VI[text]
-        elif text.startswith("Picked but not dispatched") and "Assigned to" in text:
+        elif (text.startswith("Picked but not dispatched") or text.startswith("Closed as a false alarm")) \
+                and " Assigned to " in text:
             head, owner = text.rsplit(" Assigned to ", 1)
             out = f"{_sentence(head)} Giao cho {owner.rstrip('.')}."
         else:

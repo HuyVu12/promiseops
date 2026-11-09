@@ -4,15 +4,22 @@ from __future__ import annotations
 
 import sqlite3
 
-from fastapi import APIRouter, Depends, Form
+from fastapi import APIRouter, Depends, Form, HTTPException
 
+from promiseops import clock
 from promiseops import timeutil as tu
 from promiseops.config import FULFILMENT_SOURCE
 from promiseops.integration import simulation
 from promiseops.storage import seed
 from promiseops.web.deps import CFG, back, get_conn, safe_path
 
-router = APIRouter(prefix="/sim")
+def demo_only() -> None:
+    """In pilot mode the demo controls do not exist: nobody can move the clock or reset the data."""
+    if not clock.DEMO:
+        raise HTTPException(404, "Not found")
+
+
+router = APIRouter(prefix="/sim", dependencies=[Depends(demo_only)])
 
 
 @router.post("/advance")

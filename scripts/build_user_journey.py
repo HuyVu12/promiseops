@@ -98,7 +98,7 @@ STAGES = [
      "<b>Matches the feed to the course:</b> pick 09:52 and dispatch 10:17 (late, brown, before the 11:30 limit), delivery 12:32.",
      "<b>The system watches;</b> people act only when needed.", "ok", "Calm"),
     (FACTS.get("measure_at", "15:27"), "Measure",
-     "<b>Shift lead and operations manager</b> review the day on Outcomes.",
+     "<b>Erik and Anna</b> review the day on Outcomes.",
      f"<b>Measures against the original promise:</b> {FACTS.get('ontime_with', '93.3%')} on time, 1 late delivery prevented, "
      "EUR 25 (Round 1 assumption) vs EUR 10 logged.",
      "<b>Measured honestly,</b> ready for the pilot comparison.", "ok", "Proven"),

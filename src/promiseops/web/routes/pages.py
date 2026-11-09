@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse
 
 from promiseops.config import RESOLUTION_ROLES
 from promiseops.core import kpi, queries
-from promiseops.integration import simulation
+from promiseops import clock
 from promiseops.web.deps import CFG, get_conn, get_role, page, render
 
 router = APIRouter()
@@ -22,7 +22,7 @@ def landing(request: Request):
 
 @router.get("/app", response_class=HTMLResponse)
 def queue(request: Request, view: str = "all", conn: sqlite3.Connection = Depends(get_conn)):
-    now = simulation.now(conn)
+    now = clock.now(conn)
     role = get_role(request)
     view = "mine" if view == "mine" else "all"
     all_open = queries.queue_rows(conn, now)
@@ -37,7 +37,7 @@ def queue(request: Request, view: str = "all", conn: sqlite3.Connection = Depend
 
 @router.get("/exceptions/{exception_id}", response_class=HTMLResponse)
 def exception_detail(request: Request, exception_id: int, conn: sqlite3.Connection = Depends(get_conn)):
-    detail = queries.exception_detail(conn, exception_id, simulation.now(conn), CFG)
+    detail = queries.exception_detail(conn, exception_id, clock.now(conn), CFG)
     if detail is None:
         raise HTTPException(404, "Exception not found")
     role = get_role(request)
@@ -47,7 +47,7 @@ def exception_detail(request: Request, exception_id: int, conn: sqlite3.Connecti
 
 @router.get("/orders", response_class=HTMLResponse)
 def orders(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
-    now = simulation.now(conn)
+    now = clock.now(conn)
     axis, courses, _ = queries.board(conn, now, CFG)
     results = {o["id"]: o["result"] for o in kpi.order_results(conn, now)}
     return render(
@@ -58,7 +58,7 @@ def orders(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
 
 @router.get("/kpi", response_class=HTMLResponse)
 def outcomes(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
-    now = simulation.now(conn)
+    now = clock.now(conn)
     return render(request, conn, "kpi.html", "kpi", k=kpi.compute(conn, now), m=kpi.margins(conn, now))
 
 

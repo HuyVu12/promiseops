@@ -42,7 +42,7 @@ T = {
         "s15": ("Also in Vietnamese", "The whole interface, including system messages, switches language in one click."),
         "s16": ("That is the closed loop", "Detect early, one owner, explicit decision rights, evidence and cost, outcome against the promise."),
         "esc_note": "Not picked: picker on break. Need a priority pick to make the 10:00 route.",
-        "exp_note": "Moved a picker from aisle 3; priority pick, loaded on the 10:30 shuttle.",
+        "exp_note": "Moved a picker from aisle 3; priority pick, loaded on the 10:15 shuttle.",
         "fa_note": "Picker Jonas: tote packed 09:20, handheld was offline. Scanner ticket raised.",
         "cs_note": "No vehicle until 11:50. Customer service called the site manager with a 14:35 ETA.",
         "step": "Step",

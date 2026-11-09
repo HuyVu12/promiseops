@@ -13,6 +13,7 @@ from fastapi import Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from promiseops import clock
 from promiseops import timeutil as tu
 from promiseops.config import (
     AVOIDED_COST_PER_LATE_EUR, DEFAULT_MARKET, MIN_SAMPLE_FOR_TARGET, RESOLUTION_SHORT, EXCEPTION_TYPES, HUMAN_RESOLUTIONS, MARKETS, RESOLUTION_ROLES, RESOLUTIONS, ROLES,
@@ -40,13 +41,16 @@ settings = Settings(
 
 
 def ensure_db() -> None:
-    """Create the database on first start; rebuild the demo when the schema has changed."""
+    """Create the database on first start; rebuild it when the schema or the mode has changed.
+
+    Demo mode loads the fictional scenario; pilot mode starts empty and waits for real feeds.
+    """
     settings.db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = db.connect(settings.db_path)
     try:
         db.init(conn)
-        if not db.is_current(conn):
-            seed.seed(conn)
+        if not db.is_current(conn) or db.get_meta(conn, "mode") != clock.mode():
+            seed.seed(conn) if clock.DEMO else seed.init_empty(conn)
     finally:
         conn.close()
 
@@ -109,7 +113,7 @@ def page(request: Request, template: str, ctx: dict, status_code: int = 200) -> 
 
 def render(request: Request, conn: sqlite3.Connection, template: str, active: str, **ctx) -> HTMLResponse:
     """Render a page of the working app: adds the rail (clock, feeds, role) and the flash message."""
-    now = simulation.now(conn)
+    now = clock.now(conn)
     role = get_role(request)
     open_count, mine = queries.counts(conn, role)
     shell = {
@@ -117,6 +121,6 @@ def render(request: Request, conn: sqlite3.Connection, template: str, active: st
         "active": active, "freshness": queries.freshness(conn, now, CFG), "open_count": open_count, "mine": mine,
         "msg": request.query_params.get("msg"), "error": request.query_params.get("error"),
         "stale_task": queries.open_stale_task(conn), "day": i18n.day_label(now, CFG.tz, get_lang(request)),
-        "action_minutes": simulation.ACTION_MINUTES,
+        "action_minutes": simulation.ACTION_MINUTES, "demo": clock.DEMO,
     }
     return page(request, template, {**shell, **ctx})

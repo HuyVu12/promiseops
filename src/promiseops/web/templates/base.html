@@ -68,6 +68,7 @@
     {% block content %}{% endblock %}
   </main>
 
+  {% if demo %}
   <footer class="demo" aria-label="{{ _('Demo controls') }}">
     <span class="demo-tag">{{ _('Demo controls') }}</span>
     <span class="demo-note" title="{{ _('Simulation only: replaces real OMS/WMS feeds and wall-clock time. Each recorded action takes {n} simulated minute.', n=action_minutes) }}">{{ _('Simulation only: replaces real OMS/WMS feeds and wall-clock time. Each recorded action takes {n} simulated minute.', n=action_minutes) }}</span>
@@ -94,6 +95,7 @@
       <button class="ghost danger" data-testid="reset">{{ _('Reset scenario') }}</button>
     </form>
   </footer>
+  {% endif %}
 </div>
 </body>
 </html>

@@ -175,3 +175,51 @@ def test_feed_outage_shows_a_live_banner_and_a_data_task(client):
     assert "Fulfilment data is stale." in html
     assert "No fulfilment data for 45 min" in html
     assert "Integration desk" in client.get("/data").text
+
+
+def test_heartbeat_keeps_a_quiet_feed_fresh(client):
+    assert client.post("/api/sources/nope/heartbeat").status_code == 404
+    r = client.post("/api/sources/wms/heartbeat")
+    assert r.status_code == 200 and r.json()["outcome"] == "read recorded"
+    wms = next(s for s in client.get("/api/health").json()["sources"] if s["id"] == "wms")
+    assert wms["age"] == 0
+
+
+@pytest.fixture
+def pilot(tmp_path, monkeypatch):
+    from promiseops import clock
+    from promiseops.web import app as main
+    from promiseops.web import deps
+
+    monkeypatch.setattr(clock, "DEMO", False)
+    monkeypatch.setattr(deps.settings, "db_path", tmp_path / "pilot.db")
+    monkeypatch.setattr(deps.settings, "api_key", None)
+    with TestClient(main.app) as c:
+        yield c
+
+
+def test_pilot_mode_runs_on_the_wall_clock_without_demo_controls(pilot):
+    from datetime import datetime, timedelta, timezone
+
+    from promiseops.web import app as main
+
+    health = pilot.get("/api/health").json()
+    assert health["mode"] == "pilot"
+    now = datetime.fromisoformat(health["now"])
+    assert abs((datetime.now(timezone.utc) - now).total_seconds()) < 120
+    assert pilot.post("/sim/advance", data={"minutes": 30}).status_code == 404
+    assert pilot.post("/sim/reset").status_code == 404
+    assert "Demo controls" not in pilot.get("/app").text
+
+    # A real order whose pick was due 10 minutes ago, and a live but quiet warehouse feed.
+    iso = lambda m: (now + timedelta(minutes=m)).isoformat()  # noqa: E731
+    order = {"id": "SE-9001", "market": "SE", "dc": "DC Stockholm South", "store": "S01 Sodermalm",
+             "customer_type": "B2B", "customer_ref": "Trade customer 9001", "pick_due_at": iso(-10),
+             "dispatch_cutoff_at": iso(20), "latest_dispatch_at": iso(90), "promised_at": iso(240)}
+    assert pilot.post("/api/orders", json=order).json()["outcome"] == "accepted"
+    assert pilot.post("/api/sources/wms/heartbeat").status_code == 200
+    open_ = pilot.get("/api/exceptions").json()["open"]
+    assert [(x["order_id"], x["type"]) for x in open_] == [("SE-9001", "MISSING_PICK")]
+
+    main.run_rules_once()  # what the scheduler does every minute
+    assert len(pilot.get("/api/exceptions").json()["open"]) == 1

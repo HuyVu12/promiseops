@@ -84,7 +84,7 @@ def head(title: str, sub: str, n: int) -> str:
 
 def page_context() -> str:
     parts = [head("System context: what is inside PromiseOps and what is outside",
-                  "C4 level 1. Every solid arrow is an interaction the MVP performs; dashed is the demo stand-in, dotted is planned.", 1)]
+                  "C4 level 1. Solid arrows are implemented and tested interfaces; dashed is the demo stand-in, dotted is planned.", 1)]
     parts += [
         box("person", 40, 112, 220, 96, "DC coordinator", "Person",
             "Triages exceptions, takes ownership, records evidence, hands cases to customer service"),
@@ -118,7 +118,7 @@ def page_context() -> str:
         label(355, 266, "Decides escalations and expedites", "Browser: HTML pages and forms"),
         label(355, 396, "Sees data tasks, feed health", "Browser: Data health page"),
         label(795, 126, "Sends orders + promise", "JSON, POST /api/orders"),
-        label(795, 256, "Sends fulfilment events", "JSON, POST /api/events"),
+        label(795, 256, "Sends events + heartbeats", "JSON, POST /api/events, /heartbeat"),
         label(795, 391, "Scripted records, 5-min polls", "in-process; replaces both feeds"),
         label(590, 480, "Reads labelled outcomes", "GET /api/outcomes -> training data", left=True),
     ]
@@ -169,12 +169,12 @@ def page_inside() -> str:
     parts += [
         box("comp mvp", C[1][0], wy, C[1][1], wh, "Demo controls", "routes/demo.py, MVP only", "Advance clock, pause feed, reset"),
         box("comp", 302, wy, 386, wh, "JSON API", "routes/api.py",
-            "POST /api/orders, /api/events · GET /api/exceptions, /api/outcomes, /api/health"),
+            "POST /api/orders, /api/events, /api/sources/{id}/heartbeat · GET /api/exceptions, /api/outcomes, /api/health"),
         box("comp", C[4][0], wy, C[4][1], wh, "Pages", "routes/pages.py, templates", "Queue, exception, orders, outcomes, data health; EN and VI"),
         box("comp", C[5][0], wy, C[5][1], wh, "Human actions", "routes/actions.py", "Take ownership, escalate, resolve, note, demo sign-in"),
         box("comp mvp", C[1][0], cy, C[1][1], ch, "Demo harness", "integration/simulation.py", "Sim clock; scripted feed on a 5-min poll grid; each action takes 1 min"),
         box("comp", C[2][0], cy, C[2][1], ch, "Source adapter", "integration/ingest.py", "Validates records; idempotent on source + event id; records feed reads"),
-        box("comp", C[3][0], cy, C[3][1], ch, "Rules engine", "core/engine.py", "2 rules, freshness guard, one exception per order and cause, escalation"),
+        box("comp", C[3][0], cy, C[3][1], ch, "Rules engine", "core/engine.py", "2 rules + false-alarm recheck, freshness guard, one exception per order and cause, escalation"),
         box("comp", C[4][0], cy, C[4][1], ch, "Read models", "core/queries.py, timetable.py, kpi.py", "Queue order, courses, outcomes, Round 1 scorecard"),
         box("comp", C[5][0], cy, C[5][1], ch, "Workflow", "core/workflow.py", "Role checks; evidence and cost required; audit trail"),
     ]
@@ -213,14 +213,14 @@ def page_inside() -> str:
     ]
     parts.append(
         '<div class="cycle" style="top:648px">'
-        '<div class="step"><b>1 · READ</b>The adapter reads each feed every 5 min and records that the read succeeded.</div>'
+        '<div class="step"><b>1 · READ</b>Demo: scripted feeds read every 5 min. Pilot: systems push records and heartbeats; rules run every minute.</div>'
         '<div class="step"><b>2 · CHECK</b>Duplicates ignored, bad records rejected. No read after a milestone, or a feed older than 30 min: alerts pause, a data task opens.</div>'
         '<div class="step"><b>3 · DETECT</b>Two rules raise one exception per order and cause, owned by the coordinator, 15-min timer, then escalation.</div>'
         '<div class="step"><b>4 · ACT</b>People decide. Expedite only by the shift lead; evidence on every outcome, cost on every expedite.</div>'
         '<div class="step"><b>5 · PROVE</b>Outcomes against the original promise; Round 1 scorecard; labelled data for the planned risk model.</div>'
         '</div>')
     parts.append('<div class="legend" style="left:40px;top:770px"><span><s style="background:#e3edf5;border:1px solid #7fa4c2"></s>Component (module named)</span>'
-                 '<span><s style="background:#fff8e1;border:1.5px dashed #b38f1d"></s>Demo only, replaced by real feeds and time in the pilot</span>'
+                 '<span><s style="background:#fff8e1;border:1.5px dashed #b38f1d"></s>Demo only; off in pilot mode (wall clock, scheduler)</span>'
                  '<span><s style="background:#0f3b5f"></s>Person / database</span>'
                  '<span>Same READ, CHECK, ACT, PROVE stages as Round 1, slide 5</span></div>')
     return '<section class="page">' + "".join(parts) + "</section>"
