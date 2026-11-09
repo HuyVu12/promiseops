@@ -232,4 +232,10 @@
 @media (max-width: 639px) { .hero-win .pt-head > div { display: none; } }
 
 /* Recorded walkthrough */
-.walk-video { display: block; width: 100%; aspect-ratio: 1440 / 900; margin-top: 32px; border: 1px solid var(--pt-line-2); border-radius: 12px; background: #0f3b5f; }
+.walk-fill { display: flex; justify-content: center; align-items: flex-start; margin-top: 28px; }
+.walk-video { display: block; height: 100%; width: auto; max-width: 100%; aspect-ratio: 1440 / 900; object-fit: contain; border: 1px solid var(--pt-line-2); border-radius: 12px; background: #0f3b5f; }
+@media (max-width: 1023px) { .walk-video { width: 100%; height: auto; } }
+
+/* One section per scroll step */
+html { scroll-snap-type: y proximity; }
+main > section, footer.closing, body > footer { scroll-snap-align: start; }

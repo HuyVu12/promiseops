@@ -140,9 +140,11 @@
           <a class="link" href="/app">{{ _('Try the same steps yourself') }}</a>
         </div>
       </div>
+      <div class="fill walk-fill">
       <video class="walk-video" controls preload="metadata" playsinline poster="/static/landing/demo-{{ lang }}-poster.png" aria-label="{{ _('Recorded walkthrough of the PromiseOps demo with step notes') }}">
         <source src="/static/landing/demo-{{ lang }}.webm" type="video/webm">
       </video>
+      </div>
     </div>
   </section>
 
@@ -461,5 +463,6 @@
 <script type="module" src="/static/landing/assets/system.js"></script>
 <script type="module" src="/static/landing/assets/motion/motion.js"></script>
 <script type="module" src="/static/landing/assets/layout/layout.js"></script>
+<script src="/static/landing/pager.js" defer></script>
 </body>
 </html>
