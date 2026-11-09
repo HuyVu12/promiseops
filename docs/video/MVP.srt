@@ -1,0 +1,231 @@
+1
+00:00:00,000 --> 00:00:02,779
+Hi, we are team NgaChainAILayer2.
+
+2
+00:00:02,829 --> 00:00:09,293
+In Round 1 we proposed PromiseOps for Company A: catch orders that are about
+
+3
+00:00:09,343 --> 00:00:14,950
+to miss their original delivery promise early enough to save them.
+
+4
+00:00:15,000 --> 00:00:17,007
+This is the working MVP.
+
+5
+00:00:17,057 --> 00:00:23,179
+It runs locally, all data is fictional, and a demo harness at the bottom
+
+6
+00:00:23,229 --> 00:00:29,950
+of the screen stands in for the real order and warehouse systems and the clock.
+
+7
+00:00:30,000 --> 00:00:34,272
+It is 09:00 at DC Stockholm South.
+
+8
+00:00:34,322 --> 00:00:43,552
+Every order is drawn as a course of four controls on one timetable: pick,
+
+9
+00:00:43,602 --> 00:00:50,543
+dispatch cutoff, last viable dispatch, and the promise.
+
+10
+00:00:50,593 --> 00:00:53,086
+The red line is now.
+
+11
+00:00:53,136 --> 00:00:56,391
+Both data feeds are fresh.
+
+12
+00:00:56,441 --> 00:00:59,950
+Nothing needs attention yet.
+
+13
+00:01:00,000 --> 00:01:03,018
+At 09:30 two orders appear.
+
+14
+00:01:03,068 --> 00:01:11,541
+SE-1042 has no pick confirmation, and its route leaves at 10:00, so we have
+
+15
+00:01:11,591 --> 00:01:14,041
+thirty minutes to act.
+
+16
+00:01:14,091 --> 00:01:23,700
+The rule only fires because the warehouse feed was actually read after 09:30; silence
+
+17
+00:01:23,750 --> 00:01:26,655
+is never treated as proof.
+
+18
+00:01:26,705 --> 00:01:34,950
+Each exception gets one owner, Anna, and a fifteen-minute response timer.
+
+19
+00:01:35,000 --> 00:01:39,099
+Anna checks SE-1051 first.
+
+20
+00:01:39,149 --> 00:01:50,110
+The picker confirms it was packed at 09:20; the handheld synced late.
+
+21
+00:01:50,160 --> 00:02:01,439
+She records it as a false alarm with evidence, which later tells us how
+
+22
+00:02:01,489 --> 00:02:04,950
+precise our rules are.
+
+23
+00:02:05,000 --> 00:02:13,180
+SE-1042 is real: the goods were not picked.
+
+24
+00:02:13,230 --> 00:02:27,151
+Expediting spends warehouse capacity, so a coordinator cannot approve it.
+
+25
+00:02:27,201 --> 00:02:36,529
+Anna escalates to the shift lead with the reason.
+
+26
+00:02:36,579 --> 00:02:44,950
+Decision rights are explicit in the product.
+
+27
+00:02:45,000 --> 00:02:55,258
+Erik, the shift lead, reads the note, moves a picker and records the expedite,
+
+28
+00:02:55,308 --> 00:02:57,902
+again with evidence.
+
+29
+00:02:57,952 --> 00:03:03,717
+The activity log shows who did what and why.
+
+30
+00:03:03,767 --> 00:03:14,950
+PromiseOps never writes back to the warehouse system; people act, the system records.
+
+31
+00:03:15,000 --> 00:03:20,291
+What if the warehouse feed goes quiet?
+
+32
+00:03:20,341 --> 00:03:31,255
+After thirty minutes the feed turns red, a data task opens for the integration
+
+33
+00:03:31,305 --> 00:03:41,657
+desk, and no new alerts are created, because an empty feed proves nothing.
+
+34
+00:03:41,707 --> 00:03:49,950
+Orders picked during the outage do not become false alarms.
+
+35
+00:03:50,000 --> 00:04:05,950
+When the feed recovers, the backlog arrives first and only then do the rules
+
+36
+00:04:06,000 --> 00:04:09,950
+run, on fresh data.
+
+37
+00:04:10,000 --> 00:04:13,839
+Fast forward to the afternoon.
+
+38
+00:04:13,889 --> 00:04:24,987
+SE-1042 was picked and dispatched late, shown in brown, but delivered at 12:30, before
+
+39
+00:04:25,037 --> 00:04:27,320
+its 14:00 promise.
+
+40
+00:04:27,370 --> 00:04:37,691
+SE-1077 had no vehicle and nobody acted, so it arrives late and is counted late.
+
+41
+00:04:37,741 --> 00:04:44,950
+Without the expedite, SE-1042 would also have been late.
+
+42
+00:04:45,000 --> 00:04:54,108
+Outcomes are measured against the original promise, which can never be edited, with B2B
+
+43
+00:04:54,158 --> 00:05:03,582
+and B2C reported separately: on-time rate, flagged orders still on time, time to ownership
+
+44
+00:05:03,632 --> 00:05:05,371
+and false alarms.
+
+45
+00:05:05,421 --> 00:05:14,950
+In the pilot these are compared against control stores before any business case is claimed.
+
+46
+00:05:15,000 --> 00:05:29,950
+The interface also runs in Vietnamese; system messages are translated too.
+
+47
+00:05:30,000 --> 00:05:31,946
+What changed since Round 1.
+
+48
+00:05:31,996 --> 00:05:37,787
+The scope is the one we proposed: one DC, two rules, owner, escalation, outcome
+
+49
+00:05:37,837 --> 00:05:39,266
+log and measurement.
+
+50
+00:05:39,316 --> 00:05:42,150
+We refined three things while building.
+
+51
+00:05:42,200 --> 00:05:48,656
+First, the stale-data rule: a fixed 30-minute threshold still created false alarms, so a
+
+52
+00:05:48,706 --> 00:05:53,906
+missing event now only counts if the feed was read after the milestone.
+
+53
+00:05:53,956 --> 00:05:59,599
+Second, we added a demo harness so the whole morning can be shown in minutes.
+
+54
+00:05:59,649 --> 00:06:06,475
+Third, the timetable view, because time left and ownership matter more than a list of alerts.
+
+55
+00:06:06,525 --> 00:06:09,950
+As proposed, there is no AI inside the product.
+
+56
+00:06:10,000 --> 00:06:20,557
+Under the hood: one FastAPI service, SQLite, idempotent ingestion, and 22 automated tests including
+
+57
+00:06:20,607 --> 00:06:23,879
+a browser test of this journey.
+
+58
+00:06:23,929 --> 00:06:24,950
+Thank you.
