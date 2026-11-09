@@ -230,3 +230,6 @@
 .pt-list li { grid-template-columns: 116px minmax(0, 1fr) auto; }
 @media (max-width: 1279px) { .pt-list li { grid-template-columns: 108px minmax(0, 1fr); } }
 @media (max-width: 639px) { .hero-win .pt-head > div { display: none; } }
+
+/* Recorded walkthrough */
+.walk-video { display: block; width: 100%; aspect-ratio: 1440 / 900; margin-top: 32px; border: 1px solid var(--pt-line-2); border-radius: 12px; background: #0f3b5f; }

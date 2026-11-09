@@ -131,6 +131,21 @@
     </div></div>
   </section>
 
+  <section class="section" id="walkthrough" aria-labelledby="walk-h">
+    <div class="wrap">
+      <div class="grid">
+        <h2 id="walk-h" class="span-6">{{ _('Watch one morning in under two minutes') }}</h2>
+        <div class="span-6 start-7 stack-4">
+          <p>{{ _('A recorded run of the live demo with notes on what happens at each step: two alerts at 09:30, a false alarm closed with evidence, an escalation, an expedite by the shift lead, a feed outage and the outcome against the promise.') }}</p>
+          <a class="link" href="/app">{{ _('Try the same steps yourself') }}</a>
+        </div>
+      </div>
+      <video class="walk-video" controls preload="metadata" playsinline poster="/static/landing/demo-{{ lang }}-poster.png" aria-label="{{ _('Recorded walkthrough of the PromiseOps demo with step notes') }}">
+        <source src="/static/landing/demo-{{ lang }}.webm" type="video/webm">
+      </video>
+    </div>
+  </section>
+
   <section class="section" id="queue" aria-labelledby="queue-h">
     <div class="wrap">
       <div class="grid">

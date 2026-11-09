@@ -59,7 +59,7 @@
   </div>
 
   {% if view == 'all' %}
-  <div class="band-head">{{ _('On course') }} <span>{{ on_course | length }} · {{ _('orders with every passed control confirmed') }}</span></div>
+  <div class="band-head">{{ _('On course') }} <span>{{ on_course | length }} · {{ _('orders without an open exception') }}</span></div>
   <div class="tbody quiet">
   {% for o in on_course %}
     {% set c = courses[o.id] %}

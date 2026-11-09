@@ -69,7 +69,7 @@ VI: dict[str, str] = {
     "Open exceptions": "Ngoại lệ đang mở",
     "least time left first": "ít thời gian nhất lên trước",
     "On course": "Đúng tuyến",
-    "orders with every passed control confirmed": "các đơn đã xác nhận mọi trạm đã qua",
+    "orders without an open exception": "các đơn không có ngoại lệ đang mở",
     "Delivered": "Đã giao",
     "on time": "đúng hạn",
     "late": "trễ",
@@ -341,6 +341,11 @@ VI: dict[str, str] = {
     "Steps": "Các bước",
     "Business case": "Phương án kinh doanh",
     "All company, people and order data on this site is fictional.": "Mọi dữ liệu về công ty, con người và đơn hàng trên trang này đều là hư cấu.",
+    "Watch one morning in under two minutes": "Xem một buổi sáng trong chưa đầy hai phút",
+    "A recorded run of the live demo with notes on what happens at each step: two alerts at 09:30, a false alarm closed with evidence, an escalation, an expedite by the shift lead, a feed outage and the outcome against the promise.":
+        "Bản ghi lại bản demo trực tiếp, có chú thích từng bước: hai cảnh báo lúc 09:30, một cảnh báo sai được đóng kèm bằng chứng, một lần chuyển cấp, trưởng ca cho xử lý gấp, một lần mất nguồn dữ liệu và kết quả so với cam kết.",
+    "Try the same steps yourself": "Tự thử các bước này",
+    "Recorded walkthrough of the PromiseOps demo with step notes": "Video ghi lại bản demo PromiseOps kèm chú thích từng bước",
 }
 
 # Sentence patterns produced by the system (engine, workflow, simulation).
