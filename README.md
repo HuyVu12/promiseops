@@ -25,6 +25,7 @@ Existing order and warehouse systems keep owning orders, stock and dispatch; Pro
 - [Scripts and documents](#scripts-and-documents)
 - [JSON API](#json-api)
 - [Not in the MVP](#not-in-the-mvp)
+- [Round 3: revised proposal and shadow pilot](#round-3-revised-proposal-and-shadow-pilot)
 
 ## Submission files
 
@@ -117,6 +118,22 @@ A scheduler cycle that fails is logged and retried the next minute, so escalatio
 $env:PROMISEOPS_MODE = "pilot"; $env:PROMISEOPS_DB = "$env:TEMP\pilot.db"; $env:PROMISEOPS_API_KEY = "change-me"
 python -m uvicorn --app-dir src promiseops.web.app:app --port 8001
 ```
+
+### Shadow pilot
+
+`PROMISEOPS_SHADOW=1` runs the Round 3 shadow pilot: people work real exceptions, but the current floor process still makes
+every live decision. A banner says so on every screen, each recorded decision gets a "Shadow mode" entry in the activity log,
+and Outcomes never count a shadow decision as a prevented late delivery or as spent cost; alert precision and response time
+still count, because that is what a shadow pilot measures. `/api/outcomes` marks each row with `shadow`.
+It combines with demo or pilot mode.
+
+```powershell
+$env:PROMISEOPS_SHADOW = "1"; $env:PROMISEOPS_DB = "$env:TEMP\shadow.db"
+python -m uvicorn --app-dir src promiseops.web.app:app --port 8767
+```
+
+A handoff to customer service can carry the service team's case reference (for example `CS-48213`).
+PromiseOps stores the reference, never the conversation, so no CRM integration is needed during or after a CRM migration.
 
 ## Demo walkthrough
 
@@ -227,10 +244,10 @@ python -m playwright install chromium
 python -m pytest
 ```
 
-46 tests:
+55 tests:
 
-- `tests/unit` - rules, escalation, auto-clear, escalation counts as work, one exception per cause, immutable promise, false alarms that turn out wrong come back, idempotent ingestion, stale-feed guard, unknown controls, poll grid, overdue counting, cost logging, scorecard, value.
-- `tests/web` - every page renders, HTTP actions and role checks, one simulated minute per action, API validation and API key, source heartbeat, pilot mode on the wall clock without demo controls, a pilot database that a demo restart cannot wipe, a failing scheduler tick that is logged and not fatal, labelled outcomes, 404 page, open-redirect guard, Vietnamese rendering, and checks that every template string and user-facing error has a Vietnamese translation.
+- `tests/unit` - rules, escalation, auto-clear, escalation counts as work, one exception per cause, immutable promise, false alarms that turn out wrong come back, idempotent ingestion, stale-feed guard, unknown controls, poll grid, overdue counting, cost logging, scorecard, value, shadow decisions never claimed as prevented lateness, case references validated and kept.
+- `tests/web` - every page renders, HTTP actions and role checks, one simulated minute per action, API validation and API key, source heartbeat, pilot mode on the wall clock without demo controls, a pilot database that a demo restart cannot wipe, a failing scheduler tick that is logged and not fatal, the shadow pilot over HTTP (banner, case reference, shadow flag in labelled outcomes), labelled outcomes, 404 page, open-redirect guard, Vietnamese rendering, and checks that every template string and user-facing error has a Vietnamese translation.
 - `tests/e2e` - the SE-1042 journey in a real browser, with no console errors allowed.
 
 ## Scripts and documents
@@ -249,6 +266,8 @@ python -m uvicorn --app-dir src promiseops.web.app:app --port 8766
 | `scripts/build_system_diagram.py [out.pdf]` | `docs/System Diagram.pdf` (2 pages) |
 | `scripts/build_video_assets.py` | Video slides and `MVP.srt` from `docs/video/video-script.md` |
 | `scripts/record_demo.py <en or vi> [base-url]` | Annotated walkthrough videos and posters for the landing page |
+| `scripts/capture_round3.py [base-url]` | Shadow-mode screenshots for the Round 3 deck in `docs/continuity/shots/` (server started with `PROMISEOPS_SHADOW=1`) |
+| `scripts/build_round3_deck.py` | `docs/continuity/Round 3 Pitch.pdf` (11 slides) and previews in `docs/continuity/slides/`; fails on any text overflow |
 
 ## JSON API
 
@@ -260,8 +279,8 @@ When `PROMISEOPS_API_KEY` is set, every endpoint except `/api/health` requires t
 | POST | `/api/events` | Receive a fulfilment event; idempotent on `source` + `event_id`; triggers a rules cycle |
 | POST | `/api/sources/{id}/heartbeat` | A source that is alive but has nothing new says so, so a quiet feed is not mistaken for a stale one |
 | GET | `/api/exceptions` | Open exceptions in priority order |
-| GET | `/api/outcomes` | Labelled outcomes: one row per exception with how it ended and the order's result |
-| GET | `/api/health` | Mode (demo or pilot), clock, source freshness, authentication mode |
+| GET | `/api/outcomes` | Labelled outcomes: one row per exception with how it ended, the order's result, and whether it was a shadow decision |
+| GET | `/api/health` | Mode (demo or pilot), shadow pilot on or off, clock, source freshness, authentication mode |
 
 ## Not in the MVP
 
@@ -275,6 +294,19 @@ Known limits we would close in the pilot build:
 - A case escalated to the shift lead has no second-level timer; the pilot adds escalation to the operations manager.
 - Roles come from a demo switch, not from company SSO with role and site access.
 - SQLite and one process; PostgreSQL and a separate scheduler worker are the production step.
+
+## Round 3: revised proposal and shadow pilot
+
+Company A cut the budget by 30% and made a Dynamics 365 to Salesforce CRM migration mandatory for one country.
+
+| Material | File |
+|---|---|
+| Revised proposal: assumptions, EUR 126k allocation, 12-week plan, keep/change/defer, migration controls, risks | [`docs/continuity/README.md`](docs/continuity/README.md) |
+| 15-minute pitch: slide timings, speakers, judge Q&A | [`docs/continuity/pitch.md`](docs/continuity/pitch.md) |
+| Pitch deck (11 slides, opens offline) | `docs/continuity/Round 3 Pitch.pdf`, previews in `docs/continuity/slides/` |
+
+The MVP changed in two small ways for the shadow pilot: the `PROMISEOPS_SHADOW` switch and the customer-service case reference
+(see [Shadow pilot](#shadow-pilot)). Everything else the pilot needs was already built in Round 2.
 
 ## Team and AI use
 

@@ -32,11 +32,15 @@ CFG = MARKETS[DEFAULT_MARKET]
 class Settings:
     db_path: Path
     api_key: str | None  # when set, /api/* except /api/health requires the X-API-Key header
+    # Shadow pilot (Round 3): people record what they would do; the current floor process still makes
+    # the live decision, so the outcomes never claim a prevented late delivery for these cases.
+    shadow: bool = False
 
 
 settings = Settings(
     db_path=Path(os.environ.get("PROMISEOPS_DB", PROJECT_ROOT / "var" / "promiseops.db")),
     api_key=os.environ.get("PROMISEOPS_API_KEY") or None,
+    shadow=os.environ.get("PROMISEOPS_SHADOW", "").strip().lower() in ("1", "true", "yes", "on"),
 )
 
 
@@ -131,6 +135,6 @@ def render(request: Request, conn: sqlite3.Connection, template: str, active: st
         "active": active, "freshness": queries.freshness(conn, now, CFG), "open_count": open_count, "mine": mine,
         "msg": request.query_params.get("msg"), "error": request.query_params.get("error"),
         "stale_task": queries.open_stale_task(conn), "day": i18n.day_label(now, CFG.tz, get_lang(request)),
-        "action_minutes": simulation.ACTION_MINUTES, "demo": clock.DEMO,
+        "action_minutes": simulation.ACTION_MINUTES, "demo": clock.DEMO, "shadow": settings.shadow,
     }
     return page(request, template, {**shell, **ctx})

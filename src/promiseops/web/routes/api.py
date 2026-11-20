@@ -15,7 +15,7 @@ from pydantic import BaseModel
 
 from promiseops import clock
 from promiseops import timeutil as tu
-from promiseops.core import engine, kpi, queries
+from promiseops.core import engine, kpi, queries, workflow
 from promiseops.integration import ingest
 from promiseops.web.deps import CFG, get_conn, settings
 
@@ -100,14 +100,17 @@ def outcomes(conn: sqlite3.Connection = Depends(get_conn)):
         "JOIN orders o ON o.id = x.order_id ORDER BY x.id"
     ).fetchall()
     results = {o["id"]: o["result"] for o in kpi.order_results(conn, now)}
-    return {"now": tu.iso(now), "rows": [{**dict(r), "order_result": results[r["order_id"]]} for r in rows]}
+    shadow = workflow.shadow_exception_ids(conn)
+    return {"now": tu.iso(now), "rows": [
+        {**dict(r), "order_result": results[r["order_id"]], "shadow": r["id"] in shadow} for r in rows
+    ]}
 
 
 @router.get("/health")
 def health(conn: sqlite3.Connection = Depends(get_conn)):
     now = clock.now(conn)
     return {
-        "status": "ok", "mode": clock.mode(), "now": tu.iso(now),
+        "status": "ok", "mode": clock.mode(), "shadow": settings.shadow, "now": tu.iso(now),
         "auth": "api-key" if settings.api_key else "open (local demo)",
         "sources": queries.freshness(conn, now, CFG),
     }

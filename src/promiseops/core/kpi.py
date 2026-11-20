@@ -7,6 +7,8 @@ Rules that keep the numbers honest:
 - "Late deliveries prevented" only counts orders where a person intervened (expedite) and the
   original promise was still kept. False alarms and alerts that cleared on their own are excluded.
 - Money is shown as a Round 1 planning assumption, next to the costs people actually logged.
+- Decisions recorded in a shadow pilot were not executed by PromiseOps. They count for alert precision and
+  response time, which is what a shadow pilot measures, but never as prevented late deliveries or spent cost.
 """
 
 from __future__ import annotations
@@ -17,6 +19,7 @@ from statistics import median
 
 from promiseops import timeutil as tu
 from promiseops.config import AVOIDED_COST_PER_LATE_EUR, PILOT_TARGETS
+from promiseops.core.workflow import shadow_exception_ids
 
 
 def _pct(part: int, whole: int) -> float | None:
@@ -94,12 +97,16 @@ def compute(conn: sqlite3.Connection, now: datetime) -> dict:
         if x["acknowledged_at"] and x["acknowledged_at"] <= x["ack_due_at"] and not _auto_escalated(conn, x["id"])
     ]
 
-    # Interventions: expedites, and whether the original promise was kept afterwards.
-    expedited_orders = sorted({x["order_id"] for x in resolved if x["resolution"] == "EXPEDITED"})
+    # Interventions: expedites, and whether the original promise was kept afterwards. Only decisions that
+    # were executed count; shadow decisions are reported apart.
+    shadow_ids = shadow_exception_ids(conn)
+    live = [x for x in resolved if x["id"] not in shadow_ids]
+    shadow = [x for x in resolved if x["id"] in shadow_ids]
+    expedited_orders = sorted({x["order_id"] for x in live if x["resolution"] == "EXPEDITED"})
     expedite_results = [by_id[oid]["result"] for oid in expedited_orders]
     prevented = sum(1 for r in expedite_results if r == "on_time")
     expedite_decided = sum(1 for r in expedite_results if r != "open")
-    logged_cost = round(sum(x["action_cost_eur"] or 0 for x in resolved), 2)
+    logged_cost = round(sum(x["action_cost_eur"] or 0 for x in live), 2)
 
     order_log = conn.execute("SELECT outcome, COUNT(*) AS n FROM ingest_log WHERE source = 'oms' GROUP BY outcome")
     order_counts = {r["outcome"]: r["n"] for r in order_log}
@@ -125,6 +132,9 @@ def compute(conn: sqlite3.Connection, now: datetime) -> dict:
         "prevented": prevented,
         "prevented_ids": [oid for oid in expedited_orders if by_id[oid]["result"] == "on_time"],
         "logged_cost_eur": logged_cost,
+        "shadow_decisions": len(shadow),
+        "shadow_expedites": sum(1 for x in shadow if x["resolution"] == "EXPEDITED"),
+        "shadow_cost_eur": round(sum(x["action_cost_eur"] or 0 for x in shadow), 2),
         "avoided_eur": prevented * AVOIDED_COST_PER_LATE_EUR,
         "avoided_per_late_eur": AVOIDED_COST_PER_LATE_EUR,
         "coverage_pct": _pct(usable, received),
