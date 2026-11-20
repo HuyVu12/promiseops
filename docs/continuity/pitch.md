@@ -16,6 +16,25 @@ Eleven slides, about 80 seconds each, then 10 minutes of questions. The slides a
 | 12:00-13:45 | 10. Risks and the fallback ladder | 3 | What we give up first if money runs short: contingency, optional CRM scope, then PromiseOps drops to replay. CRM continuity is never cut. |
 | 13:45-15:00 | 11. The ask | 1 | Approve EUR 126k with the two gates; name the Danish country lead, the DC owner and the migration owner; confirm the Dynamics switch-off date in writing. |
 
+## Live demo for slide 8 (90 seconds)
+
+Start it before the session, on the presenting laptop, and leave the tab open on the queue:
+
+```powershell
+$env:PROMISEOPS_SHADOW = "1"; $env:PROMISEOPS_DB = "$env:TEMPound3-demo.db"
+python -m uvicorn --app-dir src promiseops.web.app:app --port 8767
+```
+
+Open http://127.0.0.1:8767/app?lang=en, choose **DC coordinator** in the rail, click **Reset scenario**, then **+30 min**.
+
+1. Point at the blue banner: shadow pilot, the floor process still decides.
+2. Open **SE-1042**, **Take ownership**, escalate with "Not picked, need a priority pick".
+3. Switch the role to **Shift lead**, choose **Expedited by shift lead**, note "Would move a picker", cost **10**, **Record outcome**. Show the "Shadow mode" line in the activity log.
+4. Switch back to **DC coordinator**, **+30 min**, open **SE-1077**, **Take ownership**, choose **handed to customer service**, note "No vehicle until 11:50", case reference **CS-48213**, **Record outcome**. Show "Handed over" in the log.
+5. Open **Outcomes**: late deliveries prevented is 0, "Not claimed in shadow mode".
+
+If the laptop or the network fails, stay on slide 8: its four screenshots are the same steps.
+
 ## Judge Q&A
 
 - **Can you deliver both for EUR 126k?** The split is a planning ceiling. Gate 1 validates committed spend, target licences, vendor overlap, data complexity and available staff. If CRM consumes the headroom, the pilot drops to a historical replay on the existing MVP and CRM keeps its money.

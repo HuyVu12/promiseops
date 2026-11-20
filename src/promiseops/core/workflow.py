@@ -3,14 +3,24 @@
 from __future__ import annotations
 
 import math
+import re
 import sqlite3
 from datetime import datetime
 
 from promiseops import timeutil as tu
 from promiseops.config import MARKETS, RESOLUTION_ROLES, RESOLUTIONS, ROLES
-from promiseops.core.engine import audit
+from promiseops.core.engine import SYSTEM, audit
 
 MAX_ACTION_COST_EUR = 100_000
+
+# A reference to the customer-service case, never the case itself: the conversation stays in the service
+# team's own system (Salesforce in Denmark after the Round 3 migration). No CRM integration is needed.
+CASE_REF = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 _./-]{0,39}$")
+
+# Audit actions with a meaning outside the log: shadow decisions are never claimed as prevented lateness.
+SHADOW_ACTION = "SHADOW_MODE"
+SHADOW_NOTE = "Shadow pilot: recorded, not executed by PromiseOps. The live decision stays with the current floor process."
+HANDOFF_ACTION = "HANDED_OVER"
 
 
 class ActionError(ValueError):
@@ -100,9 +110,19 @@ def add_note(conn: sqlite3.Connection, exception_id: int, role: str, note: str, 
     conn.commit()
 
 
+def parse_case_ref(raw: str | None) -> str | None:
+    """Optional customer-service case reference from a form field; blank means not given."""
+    ref = (raw or "").strip()
+    if not ref:
+        return None
+    if not CASE_REF.match(ref):
+        raise ActionError("Case reference: up to 40 letters, digits, spaces or - _ . /")
+    return ref
+
+
 def resolve(
     conn: sqlite3.Connection, exception_id: int, role: str, resolution: str, note: str, now: datetime,
-    cost_eur: float | None = None,
+    cost_eur: float | None = None, case_ref: str | None = None, shadow: bool = False,
 ) -> None:
     _check_role(role)
     x = _load(conn, exception_id)
@@ -116,6 +136,8 @@ def resolve(
         raise ActionError("Record what you verified and why")
     if resolution == "EXPEDITED" and cost_eur is None:
         raise ActionError("Log the intervention cost of the expedite (0 if none)")
+    if case_ref and resolution != "CUSTOMER_NOTIFIED":
+        raise ActionError("A case reference only goes with a handoff to customer service")
     actor = actor_name(role, x["market"])
     # Resolving implies ownership; keep the acknowledgement time honest.
     conn.execute(
@@ -126,4 +148,14 @@ def resolve(
     audit(conn, exception_id, now, actor, resolution, note)
     if cost_eur is not None:
         audit(conn, exception_id, now, actor, "COST_LOGGED", f"Intervention cost logged: EUR {cost_eur:g}.")
+    if case_ref:
+        audit(conn, exception_id, now, actor, HANDOFF_ACTION, f"Customer service case reference: {case_ref}.")
+    if shadow:
+        audit(conn, exception_id, now, SYSTEM, SHADOW_ACTION, SHADOW_NOTE)
     conn.commit()
+
+
+def shadow_exception_ids(conn: sqlite3.Connection) -> set[int]:
+    """Exceptions decided during a shadow pilot: the decision was recorded, not executed."""
+    rows = conn.execute("SELECT DISTINCT exception_id FROM audit_log WHERE action = ?", (SHADOW_ACTION,))
+    return {r["exception_id"] for r in rows}

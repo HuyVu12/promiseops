@@ -12,7 +12,7 @@ from promiseops.config import ROLES
 from promiseops import clock
 from promiseops.core import workflow
 from promiseops.integration import simulation
-from promiseops.web.deps import back, get_conn, get_role, safe_path
+from promiseops.web.deps import back, get_conn, get_role, safe_path, settings
 
 router = APIRouter()
 
@@ -52,13 +52,14 @@ def add_note(request: Request, exception_id: int, note: str = Form(""), conn: sq
 @router.post("/exceptions/{exception_id}/resolve")
 def resolve(
     request: Request, exception_id: int, resolution: str = Form(""), note: str = Form(""), cost: str = Form(""),
-    conn: sqlite3.Connection = Depends(get_conn),
+    case_ref: str = Form(""), conn: sqlite3.Connection = Depends(get_conn),
 ):
     now = clock.now(conn)
 
     def record() -> None:
         workflow.resolve(conn, exception_id, get_role(request), resolution, note, now,
-                         cost_eur=workflow.parse_cost(cost))
+                         cost_eur=workflow.parse_cost(cost), case_ref=workflow.parse_case_ref(case_ref),
+                         shadow=settings.shadow)
 
     return _act(conn, exception_id, "Outcome recorded", record)
 

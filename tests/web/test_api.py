@@ -264,3 +264,44 @@ def test_a_failing_scheduler_tick_is_logged_not_fatal(monkeypatch, caplog):
     monkeypatch.setattr(main, "run_rules_once", boom)
     assert main.scheduled_tick() is False
     assert "Scheduled rules cycle failed" in caplog.text
+
+
+@pytest.fixture
+def shadow_client(tmp_path, monkeypatch):
+    from promiseops.web import app as main
+    from promiseops.web import deps
+
+    monkeypatch.setattr(deps.settings, "db_path", tmp_path / "shadow.db")
+    monkeypatch.setattr(deps.settings, "api_key", None)
+    monkeypatch.setattr(deps.settings, "shadow", True)
+    with TestClient(main.app) as c:
+        yield c
+
+
+def test_shadow_pilot_over_http(shadow_client):
+    c = shadow_client
+    assert c.get("/api/health").json()["shadow"] is True
+    assert 'data-testid="shadow-banner"' in c.get("/app").text
+    c.post("/sim/advance", data={"minutes": 30, "next": "/app"})
+    ids = {x["order_id"]: x["id"] for x in c.get("/api/exceptions").json()["open"]}
+
+    page = c.get(f"/exceptions/{ids['SE-1051']}").text
+    assert 'data-testid="shadow-hint"' in page and 'data-testid="resolve-case-ref"' in page
+    r = c.post(f"/exceptions/{ids['SE-1051']}/resolve", follow_redirects=False,
+               data={"resolution": "CUSTOMER_NOTIFIED", "note": "Called the customer", "case_ref": "CS-48213"})
+    assert r.status_code == 303 and "error" not in r.headers["location"]
+    log = c.get(f"/exceptions/{ids['SE-1051']}?lang=vi").text
+    assert "Mã yêu cầu bên chăm sóc khách hàng: CS-48213." in log
+    assert "Pilot chạy shadow" in log
+
+    rows = {x["order_id"]: x for x in c.get("/api/outcomes").json()["rows"]}
+    assert rows["SE-1051"]["shadow"] is True and rows["SE-1042"]["shadow"] is False
+
+    bad = c.post(f"/exceptions/{ids['SE-1042']}/resolve", follow_redirects=False,
+                 data={"resolution": "FALSE_ALARM", "note": "x", "case_ref": "CS;1"})
+    assert "error=" in bad.headers["location"]
+
+
+def test_round2_demo_has_no_shadow_marks(client):
+    assert 'data-testid="shadow-banner"' not in client.get("/app").text
+    assert client.get("/api/health").json()["shadow"] is False

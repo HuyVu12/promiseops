@@ -64,7 +64,7 @@
           <span class="log-time">{{ l.at | local }}</span>
           <span class="log-actor">{{ _('System') if l.actor == 'PromiseOps' else l.actor }}</span>
           <span class="log-action act-{{ l.action | lower }}">{{ _(l.action | replace('_', ' ') | lower) | capitalize }}</span>
-          {% if l.note %}<span class="log-note">{{ _(l.note) if l.actor == 'PromiseOps' or l.action in ('ACKNOWLEDGED', 'COST_LOGGED') else l.note }}</span>{% endif %}
+          {% if l.note %}<span class="log-note">{{ _(l.note) if l.actor == 'PromiseOps' or l.action in ('ACKNOWLEDGED', 'COST_LOGGED', 'HANDED_OVER') else l.note }}</span>{% endif %}
         </li>
         {% endfor %}
       </ol>
@@ -121,18 +121,30 @@
           <span class="sub">{{ _('Required for an expedite, 0 if none. Finance checks the Round 1 assumption of EUR {n} avoided per late delivery against these costs.', n=AVOIDED_EUR) }}</span>
         </div>
         {% endif %}
+        {% if 'CUSTOMER_NOTIFIED' in allowed %}
+        <div class="cost-field" data-testid="case-ref-field">
+          <label for="resolve-case-ref">{{ _('Customer service case reference') }}</label>
+          <input id="resolve-case-ref" name="case_ref" maxlength="40" autocomplete="off" placeholder="{{ _('e.g. CS-48213') }}" data-testid="resolve-case-ref">
+          <span class="sub">{{ _('Optional, only with a handoff to customer service. PromiseOps stores the reference, never the conversation.') }}</span>
+        </div>
+        {% endif %}
+        {% if shadow %}<p class="shadow-hint" data-testid="shadow-hint">{{ _('Shadow pilot: this records your decision for the scorecard. Act through the current floor process.') }}</p>{% endif %}
         <button class="primary" data-testid="resolve">{{ _('Record outcome') }}</button>
       </form>
       <script>
         (function () {
           var form = document.getElementById('resolve-form');
+          if (!form) return;
           var cost = document.getElementById('resolve-cost');
-          if (!form || !cost) return;
+          var ref = document.getElementById('resolve-case-ref');
           function sync() {
             var picked = form.querySelector('input[name=resolution]:checked');
-            var expedite = picked && picked.value === 'EXPEDITED';
-            cost.required = !!expedite;
-            cost.closest('.cost-field').classList.toggle('needed', !!expedite);
+            var value = picked ? picked.value : '';
+            if (cost) {
+              cost.required = value === 'EXPEDITED';
+              cost.closest('.cost-field').classList.toggle('needed', value === 'EXPEDITED');
+            }
+            if (ref) ref.closest('.cost-field').classList.toggle('needed', value === 'CUSTOMER_NOTIFIED');
           }
           form.addEventListener('change', sync);
           sync();

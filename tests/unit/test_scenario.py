@@ -337,3 +337,53 @@ def test_demo_feed_carries_a_resent_order_and_a_rejected_record(conn):
     assert any(o == "rejected" and "PICKED" in ref for ref, o in log)
     o = conn.execute("SELECT promised_at FROM orders WHERE id = 'SE-1042'").fetchone()
     assert o["promised_at"] == tu.iso(at("14:00"))
+
+
+# ---------- Round 3: shadow pilot and handoff by reference ----------
+
+def test_shadow_decision_is_recorded_but_never_claimed_as_prevented(conn):
+    advance_to(conn, "09:30")
+    x = exc(conn, "SE-1042", "MISSING_PICK")
+    workflow.acknowledge(conn, x["id"], "coordinator", at("09:30"))
+    workflow.escalate(conn, x["id"], "coordinator", "Not picked, need a priority pick", at("09:31"))
+    workflow.resolve(conn, x["id"], "shift_lead", "EXPEDITED", "Would move a picker", at("09:32"),
+                     cost_eur=10, shadow=True)
+    advance_to(conn, "15:30")
+    assert delivered(conn, "SE-1042") <= tu.iso(at("14:00"))  # the floor process acted anyway
+    k = kpi.compute(conn, at("15:30"))
+    assert k["prevented"] == 0 and k["avoided_eur"] == 0  # PromiseOps did not execute it
+    assert (k["shadow_decisions"], k["shadow_expedites"], k["shadow_cost_eur"]) == (1, 1, 10)
+    assert k["logged_cost_eur"] == 0
+    assert k["actionable"] == 1  # alert precision is exactly what a shadow pilot measures
+    actions = [r["action"] for r in conn.execute(
+        "SELECT action FROM audit_log WHERE exception_id = ? ORDER BY id", (x["id"],))]
+    # The shadow mark follows the decision and its cost; later entries are events arriving from the feed.
+    i = actions.index("EXPEDITED")
+    assert actions[i:i + 3] == ["EXPEDITED", "COST_LOGGED", workflow.SHADOW_ACTION]
+
+
+def test_handoff_to_customer_service_keeps_only_the_case_reference(conn):
+    advance_to(conn, "09:30")
+    x = exc(conn, "SE-1051", "MISSING_PICK")
+    with pytest.raises(workflow.ActionError, match="only goes with a handoff"):
+        workflow.resolve(conn, x["id"], "coordinator", "FALSE_ALARM", "Tote packed", at("09:31"), case_ref="CS-1")
+    workflow.resolve(conn, x["id"], "coordinator", "CUSTOMER_NOTIFIED", "Site manager called", at("09:31"),
+                     case_ref=workflow.parse_case_ref("  CS-48213 "))
+    note = conn.execute(
+        "SELECT note FROM audit_log WHERE exception_id = ? AND action = ?", (x["id"], workflow.HANDOFF_ACTION)
+    ).fetchone()["note"]
+    assert note == "Customer service case reference: CS-48213."
+
+
+@pytest.mark.parametrize("raw", ["<script>", "x" * 41, "-starts-with-dash", "CS;48213"])
+def test_case_reference_is_validated(raw):
+    with pytest.raises(workflow.ActionError, match="up to 40"):
+        workflow.parse_case_ref(raw)
+    assert workflow.parse_case_ref("   ") is None
+
+
+def test_round3_sentences_are_translated():
+    from promiseops.web import i18n
+
+    assert i18n.translate("Customer service case reference: CS-48213.", "vi") == "Mã yêu cầu bên chăm sóc khách hàng: CS-48213."
+    assert i18n.translate(workflow.SHADOW_NOTE, "vi").startswith("Pilot chạy shadow")

@@ -375,6 +375,27 @@ VI: dict[str, str] = {
         "Bắt buộc khi xử lý gấp, nhập 0 nếu không có. Bộ phận Tài chính đối chiếu giả định Round 1 (tránh được EUR {n} mỗi đơn trễ) với các chi phí này.",
     "Cost logged": "Chi phí đã ghi",
     "cost logged": "ghi chi phí",
+    # Round 3: shadow pilot and customer-service handoff by reference
+    "shadow mode": "chế độ shadow",
+    "handed over": "chuyển giao",
+    "Shadow pilot.": "Pilot chạy shadow.",
+    "PromiseOps records what you would do and why. The current floor process still makes every live decision, so no prevented late delivery is claimed.":
+        "PromiseOps ghi lại việc bạn sẽ làm và lý do. Quy trình hiện tại tại kho vẫn ra mọi quyết định thật, nên không tính là đã ngăn được đơn trễ nào.",
+    "Shadow pilot: this records your decision for the scorecard. Act through the current floor process.":
+        "Pilot chạy shadow: quyết định này được ghi để chấm điểm pilot. Hãy xử lý thật theo quy trình hiện tại tại kho.",
+    "Shadow pilot: recorded, not executed by PromiseOps. The live decision stays with the current floor process.":
+        "Pilot chạy shadow: đã ghi lại nhưng PromiseOps không thực hiện. Quyết định thật vẫn theo quy trình hiện tại tại kho.",
+    "Customer service case reference": "Mã yêu cầu bên chăm sóc khách hàng",
+    "e.g. CS-48213": "ví dụ CS-48213",
+    "Optional, only with a handoff to customer service. PromiseOps stores the reference, never the conversation.":
+        "Không bắt buộc, chỉ dùng khi chuyển chăm sóc khách hàng. PromiseOps chỉ lưu mã, không lưu nội dung trao đổi.",
+    "Not claimed in shadow mode. Decisions recorded: {n}, would-be expedites: {m}":
+        "Không tính trong chế độ shadow. Quyết định đã ghi: {n}, lần sẽ xử lý gấp: {m}",
+    "Would-be cost recorded in shadow mode": "Chi phí ước tính ghi trong chế độ shadow",
+    "Case reference: up to 40 letters, digits, spaces or - _ . /":
+        "Mã yêu cầu: tối đa 40 ký tự gồm chữ, số, khoảng trắng hoặc - _ . /",
+    "A case reference only goes with a handoff to customer service":
+        "Mã yêu cầu chỉ dùng khi chuyển chăm sóc khách hàng",
     "Overdue, not delivered": "Quá hạn, chưa giao",
     "at the DC": "đang ở kho",
     "{n} timed deliveries (B2B site and B2C home) across 12 stores, each drawn as its course. Read-only view of source data.":
@@ -480,6 +501,7 @@ PATTERNS: list[tuple[re.Pattern, str]] = [
     (re.compile(r"^(DC coordinator|Shift lead) cannot record '(.+)'\. Escalate to the shift lead\.$"), None),
     (re.compile(r"^Advance between 1 minute and 12 hours$"), "Chỉ tua từ 1 phút đến 12 giờ"),
     (re.compile(r"^Intervention cost logged: EUR (\S+)\.$"), r"Đã ghi chi phí can thiệp: EUR \1."),
+    (re.compile(r"^Customer service case reference: (.+)\.$"), r"Mã yêu cầu bên chăm sóc khách hàng: \1."),
 ]
 
 

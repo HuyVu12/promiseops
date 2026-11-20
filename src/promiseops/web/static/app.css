@@ -93,6 +93,7 @@ h2 { font-size: 15px; margin: 0 0 12px; font-weight: 600; }
 .banner { margin: 0 0 16px; padding: 10px 14px; border-radius: var(--radius); border: 1px solid; }
 .banner.danger { background: var(--red-soft); border-color: #f0bcb5; color: #7a1d14; }
 .banner.ok { background: var(--ok-soft); border-color: #b6dbc8; color: #14533a; }
+.banner.info { background: #eaf1f8; border-color: #b9cde0; color: var(--rail); }
 
 .tabs { display: flex; gap: 2px; border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 2px; background: var(--surface); }
 .tabs a { padding: 6px 12px; border-radius: 4px; color: var(--muted); font-weight: 500; white-space: nowrap; }
@@ -342,6 +343,7 @@ button.ghost { background: transparent; border-color: transparent; color: var(--
 .cost-field { display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px dashed var(--line-strong); border-radius: var(--radius); }
 .cost-field label { font-weight: 600; font-size: 13px; }
 .cost-field.needed { border-style: solid; border-color: var(--rail); background: #f3f7fb; }
+.shadow-hint { margin: 0; padding: 8px 10px; border-radius: var(--radius); background: #eaf1f8; color: var(--rail); font-size: 13px; }
 .cost-field .sub { margin: 0; font-size: 12px; }
 
 /* ---------- Error page ---------- */

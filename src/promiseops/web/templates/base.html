@@ -56,6 +56,11 @@
 
 <div class="main">
   <main class="page">
+    {% if shadow %}
+    <div class="banner info" role="status" data-testid="shadow-banner">
+      <strong>{{ _('Shadow pilot.') }}</strong> {{ _('PromiseOps records what you would do and why. The current floor process still makes every live decision, so no prevented late delivery is claimed.') }}
+    </div>
+    {% endif %}
     {% if stale_task %}
     <div class="banner danger" role="alert" data-testid="stale-banner">
       {% set wms_feed = freshness | selectattr('id', 'equalto', 'wms') | first %}
