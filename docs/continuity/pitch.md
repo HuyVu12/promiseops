@@ -21,7 +21,7 @@ Eleven slides, about 80 seconds each, then 10 minutes of questions. The slides a
 Start it before the session, on the presenting laptop, and leave the tab open on the queue:
 
 ```powershell
-$env:PROMISEOPS_SHADOW = "1"; $env:PROMISEOPS_DB = "$env:TEMPound3-demo.db"
+$env:PROMISEOPS_SHADOW = "1"; $env:PROMISEOPS_DB = "$env:TEMP\round3-demo.db"
 python -m uvicorn --app-dir src promiseops.web.app:app --port 8767
 ```
 
