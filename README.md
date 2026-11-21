@@ -267,7 +267,7 @@ python -m uvicorn --app-dir src promiseops.web.app:app --port 8766
 | `scripts/build_video_assets.py` | Video slides and `MVP.srt` from `docs/video/video-script.md` |
 | `scripts/record_demo.py <en or vi> [base-url]` | Annotated walkthrough videos and posters for the landing page |
 | `scripts/capture_round3.py [base-url]` | Shadow-mode screenshots for the Round 3 deck in `docs/continuity/shots/` (server started with `PROMISEOPS_SHADOW=1`) |
-| `scripts/build_round3_deck.py` | `docs/continuity/Round 3 Pitch.pdf` (11 slides) and previews in `docs/continuity/slides/`; fails on any text overflow |
+| `scripts/build_round3_deck.py` | `docs/continuity/Round 3 Pitch.pdf` (12 slides) and previews in `docs/continuity/slides/`; fails on any text overflow |
 
 ## JSON API
 
@@ -303,7 +303,7 @@ Company A cut the budget by 30% and made a Dynamics 365 to Salesforce CRM migrat
 |---|---|
 | Revised proposal: assumptions, EUR 126k allocation, 12-week plan, keep/change/defer, migration controls, risks | [`docs/continuity/README.md`](docs/continuity/README.md) |
 | 15-minute pitch: slide timings, speakers, judge Q&A | [`docs/continuity/pitch.md`](docs/continuity/pitch.md) |
-| Pitch deck (11 slides, opens offline) | `docs/continuity/Round 3 Pitch.pdf`, previews in `docs/continuity/slides/` |
+| Pitch deck (12 slides, opens offline) | `docs/continuity/Round 3 Pitch.pdf`, previews in `docs/continuity/slides/` |
 
 The MVP changed in two small ways for the shadow pilot: the `PROMISEOPS_SHADOW` switch and the customer-service case reference
 (see [Shadow pilot](#shadow-pilot)). Everything else the pilot needs was already built in Round 2.

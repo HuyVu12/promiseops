@@ -1,4 +1,4 @@
-"""Builds the Round 3 pitch deck: docs/continuity/Round 3 Pitch.pdf (11 slides, 16:9) and PNG previews.
+"""Builds the Round 3 pitch deck: docs/continuity/Round 3 Pitch.pdf (12 slides, 16:9) and PNG previews.
 
 Same pipeline as the Round 2 documents: hand-laid HTML, rendered by Chromium through Playwright, so the
 deck opens offline on any laptop. Numbers come from docs/continuity/README.md; screenshots of the adjusted
@@ -20,7 +20,7 @@ SHOTS = DOCS / "shots"
 PREVIEWS = DOCS / "slides"
 OUT = DOCS / "Round 3 Pitch.pdf"
 W, H = 1920, 1080
-TOTAL = 11
+TOTAL = 12
 TEAM = "PromiseOps · Round 3 · NgaChainAILayer2"
 
 CSS = """
@@ -88,6 +88,28 @@ def slide(n: int, body: str, kicker: str = "", title: str = "", dark: bool = Fal
             f'<div class="foot"><span>{left}</span><span>{n} / {TOTAL}</span></div></section>')
 
 
+def problem_statement() -> str:
+    phases = [
+        ("Round 1", "Propose a solution", "Explain how Company A could catch delivery risks early enough for warehouse teams to act."),
+        ("Round 2", "Build a working MVP", "Show how a coordinator spots an at-risk order, assigns an owner and records the outcome."),
+        ("Round 3", "Revise the proposal", "Work within a 30% smaller budget and include a mandatory move from Dynamics 365 to Salesforce."),
+    ]
+    cards = "".join(
+        f'<div class="card" style="padding:42px">'
+        f'<div style="font-size:26px;font-weight:700;color:#7c1c80">{round_name}</div>'
+        f'<h3 style="font-size:36px;margin:24px 0 18px">{title}</h3>'
+        f'<p style="font-size:30px">{description}</p></div>'
+        for round_name, title, description in phases
+    )
+    body = f"""
+    <p style="position:absolute;left:96px;top:200px;width:1510px;font-size:38px;line-height:1.35">
+      How can Company A give warehouse teams enough time to act before an order misses its delivery promise?
+    </p>
+    <div style="position:absolute;left:96px;right:96px;top:442px;bottom:182px;
+                display:grid;grid-template-columns:repeat(3,1fr);gap:28px">{cards}</div>"""
+    return slide(1, body, "IT Consultant Challenge 2026", "Problem statement")
+
+
 # ---------- 1. Title ----------
 def s1() -> str:
     stops = [("09:30", "Pick unconfirmed"), ("10:00", "Truck leaves"), ("14:00", "Delivery promised")]
@@ -109,7 +131,7 @@ def s1() -> str:
       <div style="position:absolute;left:16px;width:1350px;top:16px;height:6px;background:#a626aa"></div>
       {ctl}
     </div>"""
-    return slide(1, body, dark=True)
+    return slide(2, body, dark=True)
 
 
 # ---------- 2. Recommendation ----------
@@ -130,7 +152,7 @@ def s2() -> str:
       <p style="font-size:28px;line-height:1.4;margin:18px 0 0;color:#26343f">Same 12 weeks. Same two gates. Nothing in CRM depends on PromiseOps, or the reverse.</p>
     </div>
     <div style="position:absolute;left:700px;right:96px;top:290px;display:grid;gap:26px">{items}</div>"""
-    return slide(2, body, "Our recommendation", "Protect CRM continuity first, keep PromiseOps alive on what is already built",
+    return slide(3, body, "Our recommendation", "Protect CRM continuity first, keep PromiseOps alive on what is already built",
                  foot_note="Team assumptions; no Company A figures were provided")
 
 
@@ -156,9 +178,9 @@ def s3() -> str:
     <div style="position:absolute;left:730px;right:96px;top:290px">
       <div style="font-size:21px;font-weight:600;letter-spacing:.1em;color:#536371;margin-bottom:12px">WE PLAN ON</div>
       <table class="big"><thead><tr><th style="width:200px">Assumption</th><th>Value</th><th style="width:360px">If it is wrong</th></tr></thead><tbody>{tr}</tbody></table>
-      <p class="note" style="margin:22px 0 0">Every assumption is checked at Gate 1 in week 2. The fallback order is on slide 10.</p>
+      <p class="note" style="margin:22px 0 0">Every assumption is checked at Gate 1 in week 2. The fallback order is on slide 11.</p>
     </div>"""
-    return slide(3, body, "What changed", "Two client requests, and the assumptions we plan on",
+    return slide(4, body, "What changed", "Two client requests, and the assumptions we plan on",
                  foot_note="Team assumptions; no Company A figures were provided")
 
 
@@ -198,7 +220,7 @@ def s4() -> str:
       <tbody>{tr}<tr><td><b>Total</b></td><td class="r"><b>88</b></td><td class="r"><b>46</b></td></tr></tbody></table>
       <p style="font-size:20px;margin-top:16px">46 days x EUR 550 + EUR 1.6k infrastructure = EUR 27k</p>
     </div>"""
-    return slide(4, body, "Budget", "EUR 126k: CRM takes the largest share, PromiseOps fits because the app exists",
+    return slide(5, body, "Budget", "EUR 126k: CRM takes the largest share, PromiseOps fits because the app exists",
                  foot_note="Team assumptions; no Company A figures were provided")
 
 
@@ -225,7 +247,7 @@ def s5() -> str:
       <div style="font-size:25px;line-height:1.4"><b>How the live phase comes back.</b> If CRM closes within its budget, the unspent EUR 14.4k
       contingency funds a 4-week live phase in weeks 13-16 on the Round 1 design. No new money, inside the original six-month window.</div>
     </div></div>"""
-    return slide(5, body, "Trade-offs", "What we keep, change and postpone from Round 1")
+    return slide(6, body, "Trade-offs", "What we keep, change and postpone from Round 1")
 
 
 # ---------- 6. System diagram ----------
@@ -301,7 +323,7 @@ def s6() -> str:
       <span><s style="background:#0f3b5f"></s>in scope</span><span><s style="background:#e9ecef;border:1.5px solid #9aa4ae"></s>existing, outside</span>
       <span><s style="background:#fff;border:2px dashed #9aa4ae"></s>being retired</span>
     </div>"""
-    return slide(6, body, "System diagram", "Two independent paths, so neither can break the other")
+    return slide(7, body, "System diagram", "Two independent paths, so neither can break the other")
 
 
 # ---------- 7. User journeys ----------
@@ -337,7 +359,7 @@ def s7() -> str:
             f'<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:22px">{cards}</div></div>')
     legend = ('<div class="legend" style="left:96px;top:930px"><span><s style="background:#f6e9f6"></s>changed from the Round 2 journey</span>'
               '<span>Every Danish CRM step is new in Round 3</span></div>')
-    return slide(7, "".join(out) + legend, "User journeys", "Same morning in Sweden, a new cutover in Denmark")
+    return slide(8, "".join(out) + legend, "User journeys", "Same morning in Sweden, a new cutover in Denmark")
 
 
 # ---------- 8. MVP, adjusted ----------
@@ -367,7 +389,7 @@ def s8() -> str:
     <div style="position:absolute;left:96px;top:290px;width:570px">{pts}
       <p class="note" style="margin:6px 0 0">Two small changes, about one day of work, all automated tests pass. Shown live in the demo.</p>
     </div>{shots}"""
-    return slide(8, body, "MVP, adjusted", "Two small changes make the MVP ready for a shadow pilot")
+    return slide(9, body, "MVP, adjusted", "Two small changes make the MVP ready for a shadow pilot")
 
 
 # ---------- 9. 12 weeks and the cutover ----------
@@ -414,7 +436,7 @@ def s9() -> str:
       <h3 style="font-size:24px">If it fails</h3>
       <p style="font-size:20.5px">Before release: keep Salesforce closed and reopen Dynamics inside the written overlap. If Dynamics
       is already gone: run the rehearsed work queue and recover forward from the verified snapshot.</p></div>"""
-    return slide(9, weeks + grid + "".join(out) + gates + pause + panels, "Plan",
+    return slide(10, weeks + grid + "".join(out) + gates + pause + panels, "Plan",
                  "The Round 1 frame: 12 weeks, Gate 1 in week 2, Gate 2 in week 12")
 
 
@@ -443,7 +465,7 @@ def s10() -> str:
     <div style="position:absolute;left:880px;right:96px;top:290px">
       <table class="big"><thead><tr><th>Risk</th><th>Response</th><th style="width:200px">Owner</th></tr></thead><tbody>{tr}</tbody></table>
     </div>"""
-    return slide(10, body, "Risks", "We know what to give up first, and it is never the CRM")
+    return slide(11, body, "Risks", "We know what to give up first, and it is never the CRM")
 
 
 # ---------- 11. The ask ----------
@@ -462,7 +484,7 @@ def s11() -> str:
     <div style="position:absolute;left:96px;top:140px;font-size:72px;font-weight:700;letter-spacing:-.01em">What we ask today</div>
     <div style="position:absolute;left:96px;top:300px;width:1500px">{items}</div>
     <div style="position:absolute;left:96px;top:880px;font-size:36px;font-weight:600;color:#e7b8e8">Continuity now. Proof next. Scale when it is earned.</div>"""
-    return slide(11, body, dark=True)
+    return slide(12, body, dark=True)
 
 
 CHECK = """() => {
@@ -487,7 +509,7 @@ CHECK = """() => {
 
 
 def main() -> None:
-    slides = [s1(), s2(), s3(), s4(), s5(), s6(), s7(), s8(), s9(), s10(), s11()]
+    slides = [problem_statement(), s1(), s2(), s3(), s4(), s5(), s6(), s7(), s8(), s9(), s10(), s11()]
     doc = (f"<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'><title>PromiseOps Round 3</title>"
            f"<style>{CSS}@page{{size:{W}px {H}px;margin:0}}</style></head><body>{''.join(slides)}</body></html>")
     PREVIEWS.mkdir(parents=True, exist_ok=True)
