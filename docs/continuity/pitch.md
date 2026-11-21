@@ -4,7 +4,7 @@ Eleven slides, about 80 seconds each, then 10 minutes of questions. The slides a
 
 | Time | Slide | Speaker | Talking points |
 | --- | --- | --- | --- |
-| 0:00-1:00 | 1. Title | 1 | We passed Round 2 with a working MVP. Company A then cut the budget by 30% and made a CRM migration mandatory. Here is what we recommend now. |
+| 0:00-1:00 | 1. Title | 1 | Introduce PromiseOps using the three times on the slide, then explain what changed in Round 3. |
 | 1:00-2:30 | 2. Recommendation | 1 | Three decisions: Danish CRM to Salesforce first; PromiseOps keeps a one-DC shadow pilot on the MVP we already built; the same 12 weeks and two gates. EUR 126k. |
 | 2:30-3:45 | 3. What changed and what we assume | 1 | The two client requests. Our assumptions, each checked at Gate 1: EUR 180k baseline, Denmark, existing Salesforce org, Dynamics readable until week 10. |
 | 3:45-5:15 | 4. Budget | 2 | From EUR 180k to EUR 126k. CRM gets the largest share because it is mandatory. PromiseOps fits in EUR 27k because Round 2 already built the application: 88 person-days become 46. |
@@ -16,12 +16,20 @@ Eleven slides, about 80 seconds each, then 10 minutes of questions. The slides a
 | 12:00-13:45 | 10. Risks and the fallback ladder | 3 | What we give up first if money runs short: contingency, optional CRM scope, then PromiseOps drops to replay. CRM continuity is never cut. |
 | 13:45-15:00 | 11. The ask | 1 | Approve EUR 126k with the two gates; name the Danish country lead, the DC owner and the migration owner; confirm the Dynamics switch-off date in writing. |
 
+## Opening for slide 1
+
+Hi everyone. We're the team behind PromiseOps. In Round 2, we built a tool for warehouse coordinators to spot orders that might be late while they still have time to do something.
+
+Here's an example from our demo. An order is due at two, and the truck leaves at ten. It's half past nine, and the warehouse hasn't confirmed that the order has been picked. PromiseOps flags the order and shows the coordinator how much time they have. Someone takes ownership of the case, and later we can see whether the order arrived by two.
+
+Since then, Company A has cut the project budget by 30% and asked us to move one country from Dynamics 365 to Salesforce. We'd do that migration first and use the tool we've already built to run a smaller trial at one distribution centre. During the trial, the warehouse team would still make dispatch decisions the way they do today.
+
 ## Live demo for slide 8 (90 seconds)
 
 Start it before the session, on the presenting laptop, and leave the tab open on the queue:
 
 ```powershell
-$env:PROMISEOPS_SHADOW = "1"; $env:PROMISEOPS_DB = "$env:TEMPound3-demo.db"
+$env:PROMISEOPS_SHADOW = "1"; $env:PROMISEOPS_DB = "$env:TEMP\round3-demo.db"
 python -m uvicorn --app-dir src promiseops.web.app:app --port 8767
 ```
 

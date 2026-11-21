@@ -90,23 +90,23 @@ def slide(n: int, body: str, kicker: str = "", title: str = "", dark: bool = Fal
 
 # ---------- 1. Title ----------
 def s1() -> str:
-    stops = [("Round 1", "Proposal"), ("Round 2", "Working MVP"), ("Round 3", "Revised plan"), ("Today", "Your decision")]
+    stops = [("09:30", "Pick unconfirmed"), ("10:00", "Truck leaves"), ("14:00", "Delivery promised")]
     ctl = "".join(
-        f'<div style="position:absolute;left:{i * 520}px;top:0;width:220px">'
-        f'<div class="ctl {"done" if i < 3 else "now"}"></div>'
-        f'<div style="margin-top:22px;font-size:22px;font-weight:700">{a}</div>'
-        f'<div style="font-size:22px;color:#cfe0ee">{b}</div></div>'
+        f'<div style="position:absolute;left:{i * 675}px;top:0;width:370px">'
+        f'<div class="ctl {"now" if i == 0 else ""}"></div>'
+        f'<div style="margin-top:18px;font-size:44px;font-weight:700">{a}</div>'
+        f'<div style="font-size:30px;color:#cfe0ee">{b}</div></div>'
         for i, (a, b) in enumerate(stops))
     body = f"""
     <div style="position:absolute;left:96px;top:96px;font-size:22px;letter-spacing:.14em;color:#e7b8e8;font-weight:600">
       IT CONSULTANT CHALLENGE 2026 · ROUND 3 · TEAM NGACHAINAILAYER2</div>
-    <div style="position:absolute;left:96px;top:250px;width:1500px">
+    <div style="position:absolute;left:96px;top:210px;width:1500px">
       <div style="font-size:84px;line-height:1.05;font-weight:700;letter-spacing:-.015em">PromiseOps, revised:<br>keep the customer, keep the promise</div>
       <p style="font-size:34px;line-height:1.35;color:#cfe0ee;margin:36px 0 0;width:1300px">Company A cut the budget by 30% and made a CRM migration mandatory.
       This is how we would still deliver both, inside the same 12 weeks.</p>
     </div>
-    <div style="position:absolute;left:96px;top:760px;width:1600px;height:120px">
-      <div style="position:absolute;left:16px;width:1560px;top:16px;height:6px;background:#a626aa"></div>
+    <div style="position:absolute;left:96px;top:650px;right:96px;height:190px">
+      <div style="position:absolute;left:16px;width:1350px;top:16px;height:6px;background:#a626aa"></div>
       {ctl}
     </div>"""
     return slide(1, body, dark=True)
